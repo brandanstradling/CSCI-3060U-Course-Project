@@ -1,11 +1,12 @@
 """Helpers for fixed-width string formatting."""
 
-NAME_W = 20
+NAME_W = 19
 ACCT_W = 5
 AMT_W = 8
 MISC_W = 2
 LINE_W = 40
 
+SEP = " "
 
 def left(text: str, width: int) -> str:
     """Left-justify text and pad with spaces to a fixed width."""
