@@ -1,4 +1,4 @@
-"""Model package exports for convenient imports"""
+"""Package for data models."""
 
 from .user import User, Standard, Admin
 from .session import Session
