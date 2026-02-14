@@ -1,6 +1,8 @@
 """Account model used for lookups and basic in-memory updates."""
 
 from dataclasses import dataclass
+from models.transaction import Transaction
+
 
 
 @dataclass
@@ -20,17 +22,17 @@ class Account:
         self.balance -= amount
         return True
 
-    def transfer(self, account_holder_name: str, account_number: int, amount: float) -> None:
+    def transfer(self, account_holder_name: str, account_number: int, amount: float) -> Transaction:
         """Placeholder for transfer-related account updates."""
         return
 
     def paybill(
         self, account_holder_name: str, account_number: int, amount: float, company_name: str
-    ) -> None:
+    ) -> Transaction:
         """Placeholder for paybill-related account updates."""
         return
 
-    def deposit(self, amount: float) -> None:
+    def deposit(self, amount: float) -> Transaction:
         """Placeholder for deposit-related account updates."""
         return
 
