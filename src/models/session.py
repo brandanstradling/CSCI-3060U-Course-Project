@@ -1,40 +1,41 @@
 """Session state and per-session limit checks."""
-
+# session.py: Tracks user sessions and enforces transaction limits
 from dataclasses import dataclass
 from typing import Optional
-
-from .user import Admin, User
+from typing import Union
+from models.user import Admin, Standard
+from models.transaction import Transaction
 
 
 @dataclass
+
+
+
 class Session:
-    """Tracks who is logged in and enforces per-session limits."""
-
-    active: bool = False
-    User: Optional[User] = None
-    withdrawal: float = 0.0
-    transfer_total: float = 0.0
-    paybill_total: float = 0.0
-
-    def clearSession(self, active: bool) -> None:
-        """Reset the session state."""
-        self.active = active
+    def __init__(self):
+        self.active = False
         self.User = None
         self.withdrawal = 0.0
         self.transfer_total = 0.0
         self.paybill_total = 0.0
 
-    def login(self, active: bool, user: User) -> None:
-        """Start a new session for the given user."""
-        self.active = active
-        self.User = user
+    def clearSession(self):
+        """Reset the session state."""
+        self.active = False
+        self.User = None
         self.withdrawal = 0.0
         self.transfer_total = 0.0
         self.paybill_total = 0.0
 
-    def logout(self, active: bool) -> None:
+    def login(self, user: Admin | Standard):
+        """Start a new session for the given user."""
+        self.clearSession()
+        self.active = True
+        self.User = user
+
+    def logout(self):
         """End the current session."""
-        self.clearSession(active=active)
+        self.clearSession()
 
     def isAdmin(self) -> bool:
         """Return True if the current user is an admin."""

@@ -1,49 +1,76 @@
 """Account model used for lookups and basic in-memory updates."""
 
 from dataclasses import dataclass
+from models.session import Session
 from models.transaction import Transaction
+from datetime import datetime
 
 
 
 @dataclass
+
+
 class Account:
-    """Represents a single bank account record."""
-    account_number: int
-    balance: float
-    account_holder_name: str
-    account_plan: str = "NP"
-    account_status: bool = True  # True = active, False = disabled
-    account_type: str = ""
+    def __init__(self, account_number, balance, name, status):
+        self.account_number = account_number
+        self.balance = balance
+        self.name = name
+        self.status = status  # "A" for active, "I" for inactive
 
     def withdraw(self, amount: float) -> bool:
         """Withdraw from balance if it does not go negative."""
-        if (self.balance - amount) < 0.0:
+        if self.balance - amount < 0:
             return False
         self.balance -= amount
         return True
 
-    def transfer(self, account_holder_name: str, account_number: int, amount: float) -> Transaction:
-        """Placeholder for transfer-related account updates."""
-        return
-
-    def paybill(
-        self, account_holder_name: str, account_number: int, amount: float, company_name: str
-    ) -> Transaction:
-        """Placeholder for paybill-related account updates."""
-        return
-
     def deposit(self, amount: float) -> Transaction:
-        """Placeholder for deposit-related account updates."""
-        return
+        """Record a deposit and return a Transaction object."""
+        transaction = Transaction(
+            time=datetime.now(),
+            transaction_type="deposit",
+            amount=amount,
+            FromAccount=0,
+            ToAccount=self.account_number,
+            name=self.name,
+            account_number=self.account_number,
+            misc=""
+        )
+        self.balance += amount
+        return transaction
 
-    def delete(self) -> None:
+    def transfer(self, to_account: int, amount: float) -> Transaction:
+        """Record a transfer and return a Transaction object."""
+        if self.balance - amount < 0:
+            return None
+        transaction = Transaction(
+            time=datetime.now(),
+            transaction_type="transfer",
+            amount=amount,
+            FromAccount=self.account_number,
+            ToAccount=to_account,
+            name=self.name,
+            account_number=self.account_number,
+            misc=""
+        )
+        self.balance -= amount
+        return transaction
+
+    def paybill(self, company: str, amount: float) -> Transaction:
+        """Record a paybill transaction and return a Transaction object."""
+        transaction = Transaction(
+            time=datetime.now(),
+            transaction_type="paybill",
+            amount=amount,
+            FromAccount=self.account_number,
+            ToAccount=0,
+            name=self.name,
+            account_number=self.account_number,
+            misc=company
+        )
+        self.balance -= amount
+        return transaction
+
+    def disable(self):
         """Mark the account as inactive."""
-        self.account_status = False
-
-    def disable(self) -> None:
-        """Disable the account."""
-        self.account_status = False
-
-    def changeplan(self) -> None:
-        """Change the account plan to non-student (NP)."""
-        self.account_plan = "NP"
+        self.status = "I"

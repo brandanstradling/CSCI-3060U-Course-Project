@@ -1,4 +1,5 @@
 """Format and write transaction records to the daily transaction file."""
+# transactions_file.py: Formats and writes transaction records to the daily file
 
 from datetime import datetime
 from typing import List
@@ -40,7 +41,6 @@ def write_daily_transaction_file(path: str, transactions: List[Transaction]) -> 
     with open(path, "w", encoding="utf-8") as f:
         for t in transactions:
             f.write(format_daily_record(t) + "\n")
-
         end = Transaction(
             time=datetime.now(),
             transaction_type="end",
@@ -49,6 +49,6 @@ def write_daily_transaction_file(path: str, transactions: List[Transaction]) -> 
             ToAccount=0,
             name="",
             account_number=0,
-            misc="",
+            misc=""
         )
         f.write(format_daily_record(end) + "\n")

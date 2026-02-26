@@ -10,7 +10,6 @@ from models.account import Account
 from models.session import Session
 from models.transaction import Transaction
 from models.user import Admin, Standard, User
-
 PAYBILL_COMPANIES = {"EC", "CQ", "FI"}  # Allowed paybill company codes.
 
 
@@ -100,7 +99,7 @@ class FrontEndApp:
     def _handle_login(self) -> None:
         """Start a session and load the current accounts file."""
         temp_user = User()
-        if not temp_user.verifyLogin(self.session.active):
+        if temp_user.verifyLogin():
             print("Already logged in.")
             return
 
@@ -111,13 +110,18 @@ class FrontEndApp:
 
         if mode == "standard":
             name = input("Account holder name: ").strip()
-            user: User = Standard(account_username=name, account_number=0)
+            acct = self._prompt_int("Account number: ")
+            user: User = Standard(account_username=name, account_number=acct)
         else:
             admin_id = input("Admin ID (optional): ").strip()
             user = Admin(admin_ID=admin_id)
 
-        self.accounts_by_num = load_current_accounts(self.current_accounts_path)
-        self.session.login(active=True, user=user)
+        # Load accounts into accounts_by_num
+        self.accounts_by_num = {}
+        for account in load_current_accounts(self.current_accounts_path):
+            self.accounts_by_num[account.account_number] = account
+
+        self.session.login(user=user)
         self.logged_transactions.clear()
         print("Login successful.")
 
@@ -130,7 +134,7 @@ class FrontEndApp:
             self.daily_transactions_path,
             self.logged_transactions,
         )
-        self.session.logout(active=False)
+        self.session.logout()
         self.logged_transactions.clear()
         print("Logged out.")
 
@@ -140,6 +144,11 @@ class FrontEndApp:
             return
 
         name, acct = self._get_name_and_account_number()
+
+        if acct not in self.accounts_by_num:
+            print("Account does not exist.")
+            return
+
         amt = self._prompt_amount("Withdraw amount: ")
 
         if not self.session.withdrawal_limit(amt):
@@ -167,6 +176,11 @@ class FrontEndApp:
 
         name, from_acct = self._get_name_and_account_number()
         to_acct = self._prompt_int("To account number: ")
+
+        if from_acct not in self.accounts_by_num or to_acct not in self.accounts_by_num:
+            print("Account does not exist.")
+            return
+
         amt = self._prompt_amount("Transfer amount: ")
 
         if not self.session.transfer_limit(amt):
@@ -193,6 +207,11 @@ class FrontEndApp:
             return
 
         name, acct = self._get_name_and_account_number()
+
+        if acct not in self.accounts_by_num:
+            print("Account does not exist.")
+            return
+
         company = input("Company code (EC/CQ/FI): ").strip().upper()
         amt = self._prompt_amount("Paybill amount: ")
 
@@ -224,6 +243,11 @@ class FrontEndApp:
             return
 
         name, acct = self._get_name_and_account_number()
+
+        if acct not in self.accounts_by_num:
+            print("Account does not exist.")
+            return
+
         amt = self._prompt_amount("Deposit amount: ")
 
         t = Transaction(
@@ -237,6 +261,7 @@ class FrontEndApp:
             misc="",
         )
         self.logged_transactions.append(t)
+        self.accounts_by_num[acct].balance += amt
         print("Deposit recorded.")
 
     def _handle_create(self) -> None:
@@ -268,6 +293,10 @@ class FrontEndApp:
         name = input("Account holder name: ").strip()
         acct = self._prompt_int("Account number: ")
 
+        if acct not in self.accounts_by_num:
+            print("Account does not exist.")
+            return
+
         t = Transaction(
             time=datetime.now(),
             transaction_type="delete",
@@ -279,6 +308,7 @@ class FrontEndApp:
             misc="",
         )
         self.logged_transactions.append(t)
+        del self.accounts_by_num[acct]
         print("Delete recorded.")
 
     def _handle_disable(self) -> None:
@@ -288,6 +318,10 @@ class FrontEndApp:
 
         name = input("Account holder name: ").strip()
         acct = self._prompt_int("Account number: ")
+
+        if acct not in self.accounts_by_num:
+            print("Account does not exist.")
+            return
 
         t = Transaction(
             time=datetime.now(),
@@ -300,6 +334,7 @@ class FrontEndApp:
             misc="",
         )
         self.logged_transactions.append(t)
+        self.accounts_by_num[acct].status = "disabled"
         print("Disable recorded.")
 
     def _handle_changeplan(self) -> None:
@@ -309,6 +344,10 @@ class FrontEndApp:
 
         name = input("Account holder name: ").strip()
         acct = self._prompt_int("Account number: ")
+
+        if acct not in self.accounts_by_num:
+            print("Account does not exist.")
+            return
 
         t = Transaction(
             time=datetime.now(),
@@ -321,4 +360,5 @@ class FrontEndApp:
             misc="",
         )
         self.logged_transactions.append(t)
+        self.accounts_by_num[acct].plan = "new_plan"
         print("Changeplan recorded.")
