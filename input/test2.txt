@@ -1,3 +1,6 @@
-login admin adminpass
-delete account123
+login 
+admin 
+adminpass
+delete 
+account123
 logout

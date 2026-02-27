@@ -1,3 +1,9 @@
-login user1 password123
-withdrawal 500
+login
+standard
+user1
+12345
+password123
+withdrawal
+12345
+500
 logout

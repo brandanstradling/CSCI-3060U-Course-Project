@@ -3,13 +3,11 @@
 echo "Validating test results..."
 
 for file in input/*.txt; do
-
     testname=$(basename "$file" .txt)
-
     echo "Checking test: $testname"
 
     echo "Comparing transaction files..."
-    diff out/$testname.atf out/expected/$testname.etf
+    diff out/actual/"$testname".atf out/expected/"$testname".etf
 
     if [ $? -eq 0 ]; then
         echo "Transaction file matches."
@@ -18,7 +16,7 @@ for file in input/*.txt; do
     fi
 
     echo "Comparing terminal output..."
-    diff out/$testname.out out/expected/$testname.eout
+    diff out/actual/"$testname".out out/expected/"$testname".out
 
     if [ $? -eq 0 ]; then
         echo "Terminal output matches."

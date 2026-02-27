@@ -97,9 +97,7 @@ class FrontEndApp:
         return self.session.User.account_username, acct
 
     def _handle_login(self) -> None:
-        """Start a session and load the current accounts file."""
-        temp_user = User()
-        if temp_user.verifyLogin():
+        if self.session.active:
             print("Already logged in.")
             return
 
@@ -111,12 +109,17 @@ class FrontEndApp:
         if mode == "standard":
             name = input("Account holder name: ").strip()
             acct = self._prompt_int("Account number: ")
-            user: User = Standard(account_username=name, account_number=acct)
+            pwd = input("Password: ").strip()
+            user = Standard(account_username=name, account_number=acct, password=pwd)
         else:
             admin_id = input("Admin ID (optional): ").strip()
             user = Admin(admin_ID=admin_id)
 
-        # Load accounts into accounts_by_num
+        if not user.verifyLogin():
+            print("Invalid credentials.")
+            return
+
+        # Load accounts and proceed
         self.accounts_by_num = {}
         for account in load_current_accounts(self.current_accounts_path):
             self.accounts_by_num[account.account_number] = account
@@ -124,6 +127,7 @@ class FrontEndApp:
         self.session.login(user=user)
         self.logged_transactions.clear()
         print("Login successful.")
+
 
     def _handle_logout(self) -> None:
         """Write the daily transaction file and end the session."""

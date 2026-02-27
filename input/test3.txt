@@ -1,3 +1,10 @@
-login user1 password123
-transfer 200 from account456 to account789
+login
+standard
+user1
+456
+password123
+transfer
+456
+789
+200
 logout
