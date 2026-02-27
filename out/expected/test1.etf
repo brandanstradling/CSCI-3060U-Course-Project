@@ -1,0 +1,5 @@
+Transaction: withdrawal
+Time: 2025-03-07 10:00:00
+Account: account123
+Amount: 500.00
+Status: Success

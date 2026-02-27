@@ -1,0 +1,3 @@
+login admin adminpass
+delete account123
+logout

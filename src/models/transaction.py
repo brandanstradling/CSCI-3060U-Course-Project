@@ -1,5 +1,6 @@
 """Transaction model stored during a session."""
 
+
 from dataclasses import dataclass
 from datetime import datetime
 

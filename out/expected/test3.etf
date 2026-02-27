@@ -1,0 +1,6 @@
+Transaction: transfer
+Time: 2025-03-07 10:10:00
+From: account456
+To: account789
+Amount: 200.00
+Status: Success
