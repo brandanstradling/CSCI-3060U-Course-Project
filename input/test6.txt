@@ -1,6 +1,7 @@
 login
 standard
 John Doe
+password123
 transfer
 00001
 00002

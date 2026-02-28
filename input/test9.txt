@@ -1,6 +1,7 @@
 login
 standard
 John Doe
+password123
 withdraw
 00001
 150.00

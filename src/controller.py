@@ -1,7 +1,6 @@
 """Console controller for the interactive front end."""
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Dict, List, Tuple
 
 from file_io.accounts_file import load_current_accounts
@@ -9,14 +8,13 @@ from file_io.transactions_file import write_daily_transaction_file
 from models.account import Account
 from models.session import Session
 from models.transaction import Transaction
-from models.user import Admin, Standard, User
-PAYBILL_COMPANIES = {"EC", "CQ", "FI"}  # Allowed paybill company codes.
+from models.user import Admin, Standard
+
+PAYBILL_COMPANIES = {"EC", "CQ", "FI"}
 
 
 @dataclass
 class FrontEndApp:
-    """Runs the command loop, validates inputs, and logs transactions."""
-
     current_accounts_path: str
     daily_transactions_path: str
     session: Session = field(default_factory=Session)
@@ -24,14 +22,21 @@ class FrontEndApp:
     logged_transactions: List[Transaction] = field(default_factory=list)
 
     def run(self) -> None:
-        """Read commands from stdin and dispatch to handlers."""
         while True:
-            cmd = input().strip().lower()
+            try:
+                cmd = input().strip().lower()
+            except EOFError:
+                return
+
+            # aliases to match tests/spec variants
+            if cmd == "withdraw":
+                cmd = "withdrawal"
 
             if cmd == "login":
                 self._handle_login()
             elif cmd == "logout":
                 self._handle_logout()
+                return
             elif cmd == "withdrawal":
                 self._handle_withdrawal()
             elif cmd == "transfer":
@@ -48,18 +53,18 @@ class FrontEndApp:
                 self._handle_disable()
             elif cmd == "changeplan":
                 self._handle_changeplan()
+            elif cmd == "balance":
+                self._handle_balance()
             else:
                 print("Invalid transaction.")
 
     def _require_login(self) -> bool:
-        """Return True if a session is active, otherwise print an error."""
         if not self.session.active:
             print("Please login first.")
             return False
         return True
 
     def _require_admin(self) -> bool:
-        """Return True if the current session is an admin session."""
         if not self._require_login():
             return False
         if not self.session.isAdmin():
@@ -67,18 +72,16 @@ class FrontEndApp:
             return False
         return True
 
-    def _prompt_amount(self, prompt: str) -> float:
-        """Prompt for an amount and return 0.0 on invalid input."""
-        raw = input(prompt).strip()
+    def _prompt_amount(self) -> float:
+        raw = input().strip()
         try:
             return float(raw)
         except ValueError:
             print("Invalid amount.")
             return 0.0
 
-    def _prompt_int(self, prompt: str) -> int:
-        """Prompt for an integer and return 0 on invalid input."""
-        raw = input(prompt).strip()
+    def _prompt_int(self) -> int:
+        raw = input().strip()
         try:
             return int(raw)
         except ValueError:
@@ -86,14 +89,13 @@ class FrontEndApp:
             return 0
 
     def _get_name_and_account_number(self) -> Tuple[str, int]:
-        """Return (account_holder_name, account_number) based on session mode."""
         if self.session.isAdmin():
-            name = input("Account holder name: ").strip()
-            acct = self._prompt_int("Account number: ")
+            name = input().strip()
+            acct = self._prompt_int()
             return name, acct
 
         assert isinstance(self.session.User, Standard)
-        acct = self._prompt_int("Account number: ")
+        acct = self._prompt_int()
         return self.session.User.account_username, acct
 
     def _handle_login(self) -> None:
@@ -101,268 +103,195 @@ class FrontEndApp:
             print("Already logged in.")
             return
 
-        mode = input("Session type (standard/admin): ").strip().lower()
+        mode = input().strip().lower()
         if mode not in ("standard", "admin"):
             print("Invalid session type.")
             return
 
         if mode == "standard":
-            name = input("Account holder name: ").strip()
-            acct = self._prompt_int("Account number: ")
-            pwd = input("Password: ").strip()
+            name = input().strip()
+            acct = self._prompt_int()
+            pwd = input().strip()
             user = Standard(account_username=name, account_number=acct, password=pwd)
         else:
-            admin_id = input("Admin ID (optional): ").strip()
+            admin_id = input().strip()
             user = Admin(admin_ID=admin_id)
 
         if not user.verifyLogin(self.session.active):
             print("Invalid credentials.")
             return
 
-        # Load accounts and proceed
-        self.accounts_by_num = {}
-        for account in load_current_accounts(self.current_accounts_path):
-            self.accounts_by_num[account.account_number] = account
-
+        self.accounts_by_num = {a.account_number: a for a in load_current_accounts(self.current_accounts_path)}
         self.session.login(user=user)
         self.logged_transactions.clear()
+
+        # LOG login transaction (matches expected files that include Transaction: login)
+        if mode == "standard":
+            t = Transaction("login", 0.0, 0, 0, name, acct, "")
+        else:
+            # admin login: no acct/name in your model; keep placeholders
+            t = Transaction("login", 0.0, 0, 0, "", 0, "")
+        self.logged_transactions.append(t)
+
         print("Login successful.")
 
-
     def _handle_logout(self) -> None:
-        """Write the daily transaction file and end the session."""
         if not self._require_login():
             return
-
-        write_daily_transaction_file(
-            self.daily_transactions_path,
-            self.logged_transactions,
-        )
+        write_daily_transaction_file(self.daily_transactions_path, self.logged_transactions)
         self.session.logout()
         self.logged_transactions.clear()
         print("Logged out.")
 
     def _handle_withdrawal(self) -> None:
-        """Prompt for withdrawal details, enforce limits, and log the transaction."""
         if not self._require_login():
             return
 
         name, acct = self._get_name_and_account_number()
-
         if acct not in self.accounts_by_num:
             print("Account does not exist.")
             return
 
-        amt = self._prompt_amount("Withdraw amount: ")
-
+        amt = self._prompt_amount()
         if not self.session.withdrawal_limit(amt):
             print("Withdrawal limit exceeded.")
             return
 
-        t = Transaction(
-            time=datetime.now(),
-            transaction_type="withdrawal",
-            amount=amt,
-            FromAccount=acct,
-            ToAccount=0,
-            name=name,
-            account_number=acct,
-            misc="",
-        )
+        t = Transaction("withdraw", amt, acct, 0, name, acct, "")
         self.logged_transactions.append(t)
         self.session.withdrawal += amt
         print("Withdrawal recorded.")
 
     def _handle_transfer(self) -> None:
-        """Prompt for transfer details, enforce limits, and log the transaction."""
         if not self._require_login():
             return
 
         name, from_acct = self._get_name_and_account_number()
-        to_acct = self._prompt_int("To account number: ")
+        to_acct = self._prompt_int()
 
         if from_acct not in self.accounts_by_num or to_acct not in self.accounts_by_num:
             print("Account does not exist.")
             return
 
-        amt = self._prompt_amount("Transfer amount: ")
-
+        amt = self._prompt_amount()
         if not self.session.transfer_limit(amt):
             print("Transfer limit exceeded.")
             return
 
-        t = Transaction(
-            time=datetime.now(),
-            transaction_type="transfer",
-            amount=amt,
-            FromAccount=from_acct,
-            ToAccount=to_acct,
-            name=name,
-            account_number=from_acct,
-            misc="",
-        )
+        t = Transaction("transfer", amt, from_acct, to_acct, name, from_acct, "")
         self.logged_transactions.append(t)
         self.session.transfer_total += amt
         print("Transfer recorded (prototype).")
 
     def _handle_paybill(self) -> None:
-        """Prompt for bill details, validate company code, enforce limits, and log the transaction."""
         if not self._require_login():
             return
 
         name, acct = self._get_name_and_account_number()
-
         if acct not in self.accounts_by_num:
             print("Account does not exist.")
             return
 
-        company = input("Company code (EC/CQ/FI): ").strip().upper()
-        amt = self._prompt_amount("Paybill amount: ")
+        company = input().strip().upper()
+        amt = self._prompt_amount()
 
         if company not in PAYBILL_COMPANIES:
             print("Invalid company.")
             return
-
         if not self.session.paybill_limit(amt):
             print("Paybill limit exceeded.")
             return
 
-        t = Transaction(
-            time=datetime.now(),
-            transaction_type="paybill",
-            amount=amt,
-            FromAccount=acct,
-            ToAccount=0,
-            name=name,
-            account_number=acct,
-            misc=company,
-        )
+        # Your expected shows ToAccount: EC/CQ/FI, so put company there
+        t = Transaction("paybill", amt, acct, company, name, acct, "")
         self.logged_transactions.append(t)
         self.session.paybill_total += amt
         print("Paybill recorded.")
 
     def _handle_deposit(self) -> None:
-        """Prompt for deposit details and log the transaction."""
         if not self._require_login():
             return
 
         name, acct = self._get_name_and_account_number()
-
         if acct not in self.accounts_by_num:
             print("Account does not exist.")
             return
 
-        amt = self._prompt_amount("Deposit amount: ")
-
-        t = Transaction(
-            time=datetime.now(),
-            transaction_type="deposit",
-            amount=amt,
-            FromAccount=acct,
-            ToAccount=0,
-            name=name,
-            account_number=acct,
-            misc="",
-        )
+        amt = self._prompt_amount()
+        t = Transaction("deposit", amt, acct, 0, name, acct, "")
         self.logged_transactions.append(t)
         self.accounts_by_num[acct].balance += amt
         print("Deposit recorded.")
 
     def _handle_create(self) -> None:
-        """Prompt for create details and log the transaction."""
         if not self._require_admin():
             return
 
-        name = input("New account holder name: ").strip()
-        amt = self._prompt_amount("Initial balance: ")
+        name = input().strip()
+        amt = self._prompt_amount()
 
-        t = Transaction(
-            time=datetime.now(),
-            transaction_type="create",
-            amount=amt,
-            FromAccount=0,
-            ToAccount=0,
-            name=name,
-            account_number=0,
-            misc="",
-        )
+        t = Transaction("create", amt, 0, 0, name, 0, "")
         self.logged_transactions.append(t)
         print("Create recorded.")
 
     def _handle_delete(self) -> None:
-        """Prompt for delete details and log the transaction."""
         if not self._require_admin():
             return
 
-        name = input("Account holder name: ").strip()
-        acct = self._prompt_int("Account number: ")
+        name = input().strip()
+        acct = self._prompt_int()
 
         if acct not in self.accounts_by_num:
             print("Account does not exist.")
             return
 
-        t = Transaction(
-            time=datetime.now(),
-            transaction_type="delete",
-            amount=0.0,
-            FromAccount=acct,
-            ToAccount=0,
-            name=name,
-            account_number=acct,
-            misc="",
-        )
+        t = Transaction("delete", 0.0, acct, 0, name, acct, "")
         self.logged_transactions.append(t)
         del self.accounts_by_num[acct]
         print("Delete recorded.")
 
     def _handle_disable(self) -> None:
-        """Prompt for disable details and log the transaction."""
         if not self._require_admin():
             return
 
-        name = input("Account holder name: ").strip()
-        acct = self._prompt_int("Account number: ")
+        name = input().strip()
+        acct = self._prompt_int()
 
         if acct not in self.accounts_by_num:
             print("Account does not exist.")
             return
 
-        t = Transaction(
-            time=datetime.now(),
-            transaction_type="disable",
-            amount=0.0,
-            FromAccount=acct,
-            ToAccount=0,
-            name=name,
-            account_number=acct,
-            misc="",
-        )
+        t = Transaction("disable", 0.0, acct, 0, name, acct, "")
         self.logged_transactions.append(t)
         self.accounts_by_num[acct].status = "disabled"
         print("Disable recorded.")
 
     def _handle_changeplan(self) -> None:
-        """Prompt for changeplan details and log the transaction."""
         if not self._require_admin():
             return
 
-        name = input("Account holder name: ").strip()
-        acct = self._prompt_int("Account number: ")
+        name = input().strip()
+        acct = self._prompt_int()
 
         if acct not in self.accounts_by_num:
             print("Account does not exist.")
             return
 
-        t = Transaction(
-            time=datetime.now(),
-            transaction_type="changeplan",
-            amount=0.0,
-            FromAccount=acct,
-            ToAccount=0,
-            name=name,
-            account_number=acct,
-            misc="",
-        )
+        t = Transaction("changeplan", 0.0, acct, 0, name, acct, "")
         self.logged_transactions.append(t)
         self.accounts_by_num[acct].plan = "new_plan"
         print("Changeplan recorded.")
+
+    def _handle_balance(self) -> None:
+        if not self._require_login():
+            return
+
+        name, acct = self._get_name_and_account_number()
+        if acct not in self.accounts_by_num:
+            print("Account does not exist.")
+            return
+
+        bal = float(self.accounts_by_num[acct].balance)
+        t = Transaction("balance", 0.0, 0, 0, name, acct, "")
+        self.logged_transactions.append(t)
+        print(f"Balance: {bal:.2f}")

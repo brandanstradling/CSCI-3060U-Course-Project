@@ -1,4 +1,5 @@
 login
 standard
 John Doe
+password123
 logout

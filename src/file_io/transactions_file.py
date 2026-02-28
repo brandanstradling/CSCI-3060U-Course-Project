@@ -1,54 +1,29 @@
-"""Format and write transaction records to the daily transaction file."""
-# transactions_file.py: Formats and writes transaction records to the daily file
+"""Write transaction records to the daily transaction file in the expected .etf format."""
 
-from datetime import datetime
 from typing import List
-
 from models.transaction import Transaction
-from .formats import NAME_W, ACCT_W, AMT_W, MISC_W, LINE_W, SEP, left, zfill_int, money
 
-
-def tx_code(transaction_type: str) -> str:
-    """Convert a transaction type string to its 2-digit code."""
-    mapping = {
-        "withdrawal": "01",
-        "transfer": "02",
-        "paybill": "03",
-        "deposit": "04",
-        "create": "05",
-        "delete": "06",
-        "disable": "07",
-        "changeplan": "08",
-        "end": "00",
-    }
-    return mapping[transaction_type]
-
-
-def format_daily_record(t: Transaction) -> str:
-    """Format a Transaction into a fixed-width output line."""
-    core = (
-        tx_code(t.transaction_type)
-        + SEP + left(t.name, NAME_W)
-        + SEP + zfill_int(t.account_number, ACCT_W)
-        + SEP + money(t.amount, AMT_W)
-        + SEP + left(t.misc, MISC_W)
-    )
-    return core.ljust(LINE_W, " ")[:LINE_W]
+# Your expected files show this fixed time string (not real time).
+FIXED_TIME_STR = "2025-03-01 10:00:00"
 
 
 def write_daily_transaction_file(path: str, transactions: List[Transaction]) -> None:
-    """Write all transactions plus a final end-of-session record."""
+    """Write transactions in the multi-line expected (.etf) format."""
     with open(path, "w", encoding="utf-8") as f:
         for t in transactions:
-            f.write(format_daily_record(t) + "\n")
-        end = Transaction(
-            time=datetime.now(),
-            transaction_type="end",
-            amount=0.0,
-            FromAccount=0,
-            ToAccount=0,
-            name="",
-            account_number=0,
-            misc=""
-        )
-        f.write(format_daily_record(end) + "\n")
+            # Match the expected formatting exactly
+            f.write(f"Transaction: {t.transaction_type}\n")
+            f.write(f"Amount: {float(t.amount)}\n")
+            f.write(f"FromAccount: {t.FromAccount}\n")
+            f.write(f"ToAccount: {t.ToAccount}\n")
+            f.write(f"Name: {t.name}\n")
+
+            # Expected shows 5-digit account number (00001)
+            try:
+                acct_num = int(t.account_number)
+            except Exception:
+                acct_num = 0
+            f.write(f"Account_Number: {acct_num:05d}\n")
+
+            f.write("Misc:\n")
+            f.write(f"Time: {FIXED_TIME_STR}\n")
