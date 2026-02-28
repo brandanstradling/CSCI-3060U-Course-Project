@@ -115,7 +115,7 @@ class FrontEndApp:
             admin_id = input("Admin ID (optional): ").strip()
             user = Admin(admin_ID=admin_id)
 
-        if not user.verifyLogin():
+        if not user.verifyLogin(self.session.active):
             print("Invalid credentials.")
             return
 

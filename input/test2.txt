@@ -1,6 +1,6 @@
-login 
-admin 
-adminpass
-delete 
-account123
+login
+admin
+create
+Alice Smith
+1000.00
 logout

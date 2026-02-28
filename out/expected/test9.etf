@@ -1,5 +1,5 @@
-Transaction: changeplan
-Amount: 0.0
+Transaction: withdraw
+Amount: 150.0
 FromAccount: 0
 ToAccount: 0
 Name: John Doe

@@ -1,6 +1,7 @@
 login
-admin
-delete
+standard
 John Doe
+deposit
 00001
+200.00
 logout

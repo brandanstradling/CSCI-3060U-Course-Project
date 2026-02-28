@@ -1,6 +1,6 @@
 login
-admin
-delete
+standard
 John Doe
+balance
 00001
 logout

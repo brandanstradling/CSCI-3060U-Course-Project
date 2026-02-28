@@ -1,5 +1,8 @@
-Transaction: delete
-Time: 2025-03-07 10:05:00
-Account: account123
-Amount: 0.00
-Status: Success
+Transaction: create
+Amount: 0.0
+FromAccount: 0
+ToAccount: 0
+Name: Ikuto
+Account_Number: 00002
+Misc:
+Time: 2025-03-01 10:00:00

@@ -1,0 +1,8 @@
+Transaction: transfer
+Amount: 50.0
+FromAccount: 00001
+ToAccount: 00002
+Name: John Doe
+Account_Number: 00001
+Misc:
+Time: 2025-03-01 10:00:00

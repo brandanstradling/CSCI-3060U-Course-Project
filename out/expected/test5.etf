@@ -1,7 +1,7 @@
-Transaction: changeplan
-Amount: 0.0
-FromAccount: 0
-ToAccount: 0
+Transaction: paybill
+Amount: 100.0
+FromAccount: 00001
+ToAccount: EC
 Name: John Doe
 Account_Number: 00001
 Misc:
