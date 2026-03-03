@@ -1,0 +1,13 @@
+Welcome to the banking system. Enter commands or EOF to quit.
+Command (withdrawal, transfer, paybill, deposit, balance, create, delete, disable, changeplan, login, logout):
+Session type (standard/admin):
+Name:
+Enter number:
+Password:
+Command (withdrawal, transfer, paybill, deposit, balance, create, delete, disable, changeplan, login, logout):
+Enter number:
+Destination account:
+Enter number:
+Amount:
+Command (withdrawal, transfer, paybill, deposit, balance, create, delete, disable, changeplan, login, logout):
+Goodbye.

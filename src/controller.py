@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
+import sys
 
 from file_io.accounts_file import load_current_accounts
 from file_io.transactions_file import write_daily_transaction_file
@@ -21,11 +22,19 @@ class FrontEndApp:
     accounts_by_num: Dict[int, Account] = field(default_factory=dict)
     logged_transactions: List[Transaction] = field(default_factory=list)
 
+    def _print(self, msg: str) -> None:
+        # user-facing messages go to stderr so tests (stdout) are unaffected
+        print(msg, file=sys.stderr)
+
     def run(self) -> None:
+        # initial banner
+        self._print("Welcome to the banking system. Enter commands or EOF to quit.")
         while True:
             try:
+                self._print("Command (withdrawal, transfer, paybill, deposit, balance, create, delete, disable, changeplan, login, logout):")
                 cmd = input().strip().lower()
             except EOFError:
+                self._print("Goodbye.")
                 return
 
             # aliases to match tests/spec variants
@@ -36,6 +45,7 @@ class FrontEndApp:
                 self._handle_login()
             elif cmd == "logout":
                 self._handle_logout()
+                self._print("Goodbye.")
                 return
             elif cmd == "withdrawal":
                 self._handle_withdrawal()
@@ -73,6 +83,7 @@ class FrontEndApp:
         return True
 
     def _prompt_amount(self) -> float:
+        self._print("Amount:")
         raw = input().strip()
         try:
             return float(raw)
@@ -81,6 +92,7 @@ class FrontEndApp:
             return 0.0
 
     def _prompt_int(self) -> int:
+        self._print("Enter number:")
         raw = input().strip()
         try:
             return int(raw)
@@ -90,6 +102,7 @@ class FrontEndApp:
 
     def _get_name_and_account_number(self) -> Tuple[str, int]:
         if self.session.isAdmin():
+            self._print("Name:")
             name = input().strip()
             acct = self._prompt_int()
             return name, acct
@@ -103,17 +116,21 @@ class FrontEndApp:
             print("Already logged in.")
             return
 
+        self._print("Session type (standard/admin):")
         mode = input().strip().lower()
         if mode not in ("standard", "admin"):
             print("Invalid session type.")
             return
 
         if mode == "standard":
+            self._print("Name:")
             name = input().strip()
             acct = self._prompt_int()
+            self._print("Password:")
             pwd = input().strip()
             user = Standard(account_username=name, account_number=acct, password=pwd)
         else:
+            self._print("Admin ID:")
             admin_id = input().strip()
             user = Admin(admin_ID=admin_id)
 
@@ -160,6 +177,7 @@ class FrontEndApp:
             return
 
         name, from_acct = self._get_name_and_account_number()
+        self._print("Destination account:")
         to_acct = self._prompt_int()
 
         if from_acct not in self.accounts_by_num or to_acct not in self.accounts_by_num:
@@ -185,6 +203,7 @@ class FrontEndApp:
             print("Account does not exist.")
             return
 
+        self._print("Company code (EC/CQ/FI):")
         company = input().strip().upper()
         amt = self._prompt_amount()
 
@@ -220,6 +239,7 @@ class FrontEndApp:
         if not self._require_admin():
             return
 
+        self._print("Name:")
         name = input().strip()
         acct = self._prompt_int()
         amt = self._prompt_amount()
@@ -232,6 +252,7 @@ class FrontEndApp:
         if not self._require_admin():
             return
 
+        self._print("Name:")
         name = input().strip()
         acct = self._prompt_int()
 
@@ -248,6 +269,7 @@ class FrontEndApp:
         if not self._require_admin():
             return
 
+        self._print("Name:")
         name = input().strip()
         acct = self._prompt_int()
 
@@ -264,6 +286,7 @@ class FrontEndApp:
         if not self._require_admin():
             return
 
+        self._print("Name:")
         name = input().strip()
         acct = self._prompt_int()
 
