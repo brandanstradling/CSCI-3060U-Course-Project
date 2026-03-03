@@ -1,9 +1,10 @@
 login
 standard
 John Doe
+1
 password123
 paybill
-00001
+1
 EC
 100.00
 logout

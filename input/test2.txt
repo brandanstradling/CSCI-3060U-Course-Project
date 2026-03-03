@@ -1,6 +1,8 @@
 login
 admin
+ADMIN001
 create
-Alice Smith
+Alice
+2
 1000.00
 logout

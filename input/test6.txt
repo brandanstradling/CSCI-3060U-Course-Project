@@ -1,9 +1,10 @@
 login
 standard
 John Doe
+1
 password123
 transfer
-00001
-00002
+1
+2
 50.00
 logout

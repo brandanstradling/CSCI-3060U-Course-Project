@@ -9,20 +9,20 @@ def parse_current_account_line(line: str) -> Optional[Account]:
     """Parse one fixed-width account line, returning None for the end sentinel."""
     line = line.rstrip("\n")
 
+    # Check for end-of-file marker before parsing
+    if "ENDOFFILE" in line:
+        return None
+
     acct_num = int(line[0:5])
     name = line[5:25].rstrip()
     status = line[25:26]
     balance = float(line[26:34])
 
-    if name.strip() == "ENDOFFILE":
-        return None
-
-    active = (status == "A")
     return Account(
         account_number=acct_num,
         balance=balance,
-        account_holder_name=name,
-        account_status=active,
+        name=name,
+        status=status,
     )
 
 
@@ -37,4 +37,4 @@ def load_current_accounts(path: str) -> Dict[int, Account]:
                 break
             accounts[acc.account_number] = acc
 
-    return accounts
+    return list(accounts.values())

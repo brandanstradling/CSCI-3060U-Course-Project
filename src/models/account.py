@@ -40,9 +40,9 @@ class Account:
         return transaction
 
     def transfer(self, to_account: int, amount: float) -> Transaction:
-        """Record a transfer and return a Transaction object."""
+        """Record a transfer. Returns a Transaction on success, None on failure."""
         if self.balance - amount < 0:
-            return None
+            return None  # Insufficient funds
         transaction = Transaction(
             time=datetime.now(),
             transaction_type="transfer",

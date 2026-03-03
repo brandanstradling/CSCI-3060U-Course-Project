@@ -1,8 +1,9 @@
 login
 standard
 John Doe
+1
 password123
 deposit
-00001
+1
 200.00
 logout

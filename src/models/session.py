@@ -1,5 +1,4 @@
 """Session state and per-session limit checks."""
-# session.py: Tracks user sessions and enforces transaction limits
 from dataclasses import dataclass
 from typing import Optional
 from typing import Union

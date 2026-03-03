@@ -1,7 +1,8 @@
 login
 standard
 John Doe
+1
 password123
 balance
-00001
+1
 logout

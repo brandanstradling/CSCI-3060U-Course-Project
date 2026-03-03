@@ -125,15 +125,8 @@ class FrontEndApp:
         self.session.login(user=user)
         self.logged_transactions.clear()
 
-        # LOG login transaction (matches expected files that include Transaction: login)
-        if mode == "standard":
-            t = Transaction("login", 0.0, 0, 0, name, acct, "")
-        else:
-            # admin login: no acct/name in your model; keep placeholders
-            t = Transaction("login", 0.0, 0, 0, "", 0, "")
-        self.logged_transactions.append(t)
-
-        print("Login successful.")
+        # Don't log login transactions
+        print("Login successful. ")
 
     def _handle_logout(self) -> None:
         if not self._require_login():
@@ -157,10 +150,10 @@ class FrontEndApp:
             print("Withdrawal limit exceeded.")
             return
 
-        t = Transaction("withdraw", amt, acct, 0, name, acct, "")
+        t = Transaction("withdraw", amt, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
         self.session.withdrawal += amt
-        print("Withdrawal recorded.")
+        print("Withdrawal recorded. ")
 
     def _handle_transfer(self) -> None:
         if not self._require_login():
@@ -181,7 +174,7 @@ class FrontEndApp:
         t = Transaction("transfer", amt, from_acct, to_acct, name, from_acct, "")
         self.logged_transactions.append(t)
         self.session.transfer_total += amt
-        print("Transfer recorded (prototype).")
+        print("Transfer recorded (prototype). ")
 
     def _handle_paybill(self) -> None:
         if not self._require_login():
@@ -206,7 +199,7 @@ class FrontEndApp:
         t = Transaction("paybill", amt, acct, company, name, acct, "")
         self.logged_transactions.append(t)
         self.session.paybill_total += amt
-        print("Paybill recorded.")
+        print("Paybill recorded. ")
 
     def _handle_deposit(self) -> None:
         if not self._require_login():
@@ -218,19 +211,20 @@ class FrontEndApp:
             return
 
         amt = self._prompt_amount()
-        t = Transaction("deposit", amt, acct, 0, name, acct, "")
+        t = Transaction("deposit", amt, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
         self.accounts_by_num[acct].balance += amt
-        print("Deposit recorded.")
+        print("Deposit recorded. ")
 
     def _handle_create(self) -> None:
         if not self._require_admin():
             return
 
         name = input().strip()
+        acct = self._prompt_int()
         amt = self._prompt_amount()
 
-        t = Transaction("create", amt, 0, 0, name, 0, "")
+        t = Transaction("create", 0.0, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
         print("Create recorded.")
 
@@ -245,7 +239,7 @@ class FrontEndApp:
             print("Account does not exist.")
             return
 
-        t = Transaction("delete", 0.0, acct, 0, name, acct, "")
+        t = Transaction("delete", 0.0, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
         del self.accounts_by_num[acct]
         print("Delete recorded.")
@@ -261,7 +255,7 @@ class FrontEndApp:
             print("Account does not exist.")
             return
 
-        t = Transaction("disable", 0.0, acct, 0, name, acct, "")
+        t = Transaction("disable", 0.0, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
         self.accounts_by_num[acct].status = "disabled"
         print("Disable recorded.")
@@ -277,7 +271,7 @@ class FrontEndApp:
             print("Account does not exist.")
             return
 
-        t = Transaction("changeplan", 0.0, acct, 0, name, acct, "")
+        t = Transaction("changeplan", 0.0, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
         self.accounts_by_num[acct].plan = "new_plan"
         print("Changeplan recorded.")
@@ -294,4 +288,4 @@ class FrontEndApp:
         bal = float(self.accounts_by_num[acct].balance)
         t = Transaction("balance", 0.0, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
-        print(f"Balance: {bal:.2f}")
+        print(f"Balance: {bal:.2f} ")

@@ -1,8 +1,9 @@
 login
 standard
 John Doe
+1
 password123
 withdraw
-00001
+1
 150.00
 logout
