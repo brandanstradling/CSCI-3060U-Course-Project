@@ -1,8 +1,0 @@
-Transaction: balance
-Amount: 0.0
-FromAccount: 0
-ToAccount: 0
-Name: John Doe
-Account_Number: 00001
-Misc:
-Time: 2025-03-01 10:00:00

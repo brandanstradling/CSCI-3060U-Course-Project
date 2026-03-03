@@ -1,47 +1,30 @@
 #!/bin/bash
 
-if [ ! -d "src" ] || [ ! -d "input" ] || [ ! -f "data/current_accounts.txt" ]; then
-    echo "Error: Must run from project root directory"
-    echo "Current directory: $(pwd)"
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON=python3
+elif command -v python >/dev/null 2>&1; then
+    PYTHON=python
+else
+    echo "Error: python3 or python not found" >&2
     exit 1
 fi
 
 mkdir -p out/actual
 
-echo "Running all tests..."
-echo "========================================"
-
-test_count=0
-success_count=0
-
+failed=0
 for file in input/test*.txt; do
-    if [ ! -f "$file" ]; then
-        echo "Error: Input file not found: $file"
-        continue
-    fi
-    
-    test_name=$(basename "$file" .txt)
-    echo -n "Running test: $test_name ... "
-    ((test_count++))
-
-    if python3 src/main.py "$test_name" data/current_accounts.txt \
+    [ -f "$file" ] || continue
+    testname=$(basename "$file" .txt)
+    echo "Running $testname"
+    if "$PYTHON" src/main.py "$testname" data/current_accounts.txt \
         < "$file" \
-        > "out/actual/$test_name.out" \
-        2> "out/actual/$test_name.err"; then
+        > "out/actual/$testname.out" \
+        2> "out/actual/$testname.err"; then
         echo "OK"
-        ((success_count++))
     else
-        echo "FAILED (Python error)"
+        echo "FAILED $testname"
+        failed=1
     fi
 done
 
-echo "========================================"
-echo "Completed: $success_count/$test_count tests ran successfully"
-
-if [ $success_count -eq $test_count ] && [ $test_count -gt 0 ]; then
-    echo "Ready to run check_tests.sh to validate outputs."
-    exit 0
-else
-    echo "Some tests failed."
-    exit 1
-fi
+exit $failed

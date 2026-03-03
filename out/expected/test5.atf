@@ -1,8 +1,0 @@
-Transaction: paybill
-Amount: 100.0
-FromAccount: 00001
-ToAccount: EC
-Name: John Doe
-Account_Number: 00001
-Misc:
-Time: 2025-03-01 10:00:00
