@@ -4,14 +4,13 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 import sys
 
-from file_io.accounts_file import load_current_accounts
-from file_io.transactions_file import write_daily_transaction_file
-from models.account import Account
-from models.session import Session
-from models.transaction import Transaction
-from models.user import Admin, Standard
-
-PAYBILL_COMPANIES = {"EC", "CQ", "FI"}
+from src.config import PAYBILL_COMPANIES, FIXED_TIME_STR
+from src.io.readers import load_current_accounts
+from src.io.writers import write_daily_transaction_file
+from src.models.account import Account
+from src.models.session import Session
+from src.models.transaction import Transaction
+from src.models.user import Admin, Standard
 
 
 @dataclass
@@ -77,7 +76,7 @@ class FrontEndApp:
     def _require_admin(self) -> bool:
         if not self._require_login():
             return False
-        if not self.session.isAdmin():
+        if not self.session.is_admin():
             print("Admin privileges required.")
             return False
         return True
@@ -101,7 +100,7 @@ class FrontEndApp:
             return 0
 
     def _get_name_and_account_number(self) -> Tuple[str, int]:
-        if self.session.isAdmin():
+        if self.session.is_admin():
             self._print("Name:")
             name = input().strip()
             acct = self._prompt_int()
@@ -134,7 +133,7 @@ class FrontEndApp:
             admin_id = input().strip()
             user = Admin(admin_ID=admin_id)
 
-        if not user.verifyLogin(self.session.active):
+        if not user.verify_login(self.session.active):
             print("Invalid credentials.")
             return
 
@@ -279,7 +278,7 @@ class FrontEndApp:
 
         t = Transaction("disable", 0.0, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
-        self.accounts_by_num[acct].status = "disabled"
+        self.accounts_by_num[acct].status = "D"
         print("Disable recorded.")
 
     def _handle_changeplan(self) -> None:
@@ -294,9 +293,15 @@ class FrontEndApp:
             print("Account does not exist.")
             return
 
+        self._print("New plan type (SP/NP):")
+        new_plan = input().strip().upper()
+        if new_plan not in ("SP", "NP"):
+            print("Invalid plan type.")
+            return
+
         t = Transaction("changeplan", 0.0, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
-        self.accounts_by_num[acct].plan = "new_plan"
+        self.accounts_by_num[acct].plan = new_plan
         print("Changeplan recorded.")
 
     def _handle_balance(self) -> None:

@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from .transaction import Transaction
+from src.models.transaction import Transaction
 
 
 @dataclass
@@ -12,7 +12,7 @@ class User:
 
     password: str = ""
 
-    def verifyLogin(self, session_active: bool) -> bool:
+    def verify_login(self, session_active: bool) -> bool:
         """Return True if login is allowed given the current session state."""
         return not session_active
 
@@ -34,11 +34,10 @@ class Admin(User):
     def create(self, Name: str, Amount: float) -> Transaction:
         """Build a Transaction object representing a create request."""
         return Transaction(
-            time=datetime.now(),
             transaction_type="create",
             amount=Amount,
-            FromAccount=0,
-            ToAccount=0,
+            from_account=0,
+            to_account=0,
             name=Name,
             account_number=0,
             misc="",

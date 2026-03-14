@@ -16,7 +16,7 @@ for file in input/test*.txt; do
     [ -f "$file" ] || continue
     testname=$(basename "$file" .txt)
     echo "Running $testname"
-    if "$PYTHON" src/main.py "$testname" data/current_accounts.txt \
+    if "$PYTHON" -m src.frontend.main "$testname" data/current_accounts.txt \
         < "$file" \
         > "out/actual/$testname.out" \
         2> "out/actual/$testname.err"; then

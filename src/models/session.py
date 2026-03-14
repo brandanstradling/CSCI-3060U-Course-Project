@@ -1,59 +1,55 @@
 """Session state and per-session limit checks."""
-from dataclasses import dataclass
-from typing import Optional
-from typing import Union
-from models.user import Admin, Standard
-from models.transaction import Transaction
 
-
-@dataclass
+from src.config import WITHDRAWAL_LIMIT, TRANSFER_LIMIT, PAYBILL_LIMIT
+from src.models.user import Admin, Standard
+from src.models.transaction import Transaction
 
 
 
 class Session:
     def __init__(self):
         self.active = False
-        self.User = None
+        self.user = None
         self.withdrawal = 0.0
         self.transfer_total = 0.0
         self.paybill_total = 0.0
 
-    def clearSession(self):
+    def clear_session(self):
         """Reset the session state."""
         self.active = False
-        self.User = None
+        self.user = None
         self.withdrawal = 0.0
         self.transfer_total = 0.0
         self.paybill_total = 0.0
 
     def login(self, user: Admin | Standard):
         """Start a new session for the given user."""
-        self.clearSession()
+        self.clear_session()
         self.active = True
-        self.User = user
+        self.user = user
 
     def logout(self):
         """End the current session."""
-        self.clearSession()
+        self.clear_session()
 
-    def isAdmin(self) -> bool:
+    def is_admin(self) -> bool:
         """Return True if the current user is an admin."""
-        return isinstance(self.User, Admin)
+        return isinstance(self.user, Admin)
 
     def withdrawal_limit(self, amount: float) -> bool:
         """Return True if a withdrawal amount is allowed in this session."""
-        if self.isAdmin():
+        if self.is_admin():
             return True
-        return (self.withdrawal + amount) <= 500.00
+        return (self.withdrawal + amount) <= WITHDRAWAL_LIMIT
 
     def transfer_limit(self, amount: float) -> bool:
         """Return True if a transfer amount is allowed in this session."""
-        if self.isAdmin():
+        if self.is_admin():
             return True
-        return (self.transfer_total + amount) <= 1000.00
+        return (self.transfer_total + amount) <= TRANSFER_LIMIT
 
     def paybill_limit(self, amount: float) -> bool:
         """Return True if a paybill amount is allowed in this session."""
-        if self.isAdmin():
+        if self.is_admin():
             return True
-        return (self.paybill_total + amount) <= 2000.00
+        return (self.paybill_total + amount) <= PAYBILL_LIMIT

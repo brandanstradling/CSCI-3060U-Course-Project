@@ -1,76 +1,64 @@
 """Account model used for lookups and basic in-memory updates."""
 
-from dataclasses import dataclass
-from models.session import Session
-from models.transaction import Transaction
-from datetime import datetime
+from src.config import TRANSACTION_FEES
+from src.models.transaction import Transaction
 
-
-
-@dataclass
 
 
 class Account:
-    def __init__(self, account_number, balance, name, status):
+    def __init__(self, account_number, balance, name, status, plan="", total_transactions=0):
         self.account_number = account_number
         self.balance = balance
         self.name = name
-        self.status = status  # "A" for active, "I" for inactive
-
-    def withdraw(self, amount: float) -> bool:
-        """Withdraw from balance if it does not go negative."""
-        if self.balance - amount < 0:
-            return False
-        self.balance -= amount
-        return True
-
-    def deposit(self, amount: float) -> Transaction:
-        """Record a deposit and return a Transaction object."""
-        transaction = Transaction(
-            time=datetime.now(),
-            transaction_type="deposit",
-            amount=amount,
-            FromAccount=0,
-            ToAccount=self.account_number,
-            name=self.name,
-            account_number=self.account_number,
-            misc=""
-        )
-        self.balance += amount
-        return transaction
-
-    def transfer(self, to_account: int, amount: float) -> Transaction:
-        """Record a transfer. Returns a Transaction on success, None on failure."""
-        if self.balance - amount < 0:
-            return None  # Insufficient funds
-        transaction = Transaction(
-            time=datetime.now(),
-            transaction_type="transfer",
-            amount=amount,
-            FromAccount=self.account_number,
-            ToAccount=to_account,
-            name=self.name,
-            account_number=self.account_number,
-            misc=""
-        )
-        self.balance -= amount
-        return transaction
-
-    def paybill(self, company: str, amount: float) -> Transaction:
-        """Record a paybill transaction and return a Transaction object."""
-        transaction = Transaction(
-            time=datetime.now(),
-            transaction_type="paybill",
-            amount=amount,
-            FromAccount=self.account_number,
-            ToAccount=0,
-            name=self.name,
-            account_number=self.account_number,
-            misc=company
-        )
-        self.balance -= amount
-        return transaction
+        self.status = status  # "A" for active, "D" for disabled
+        self.plan = plan
+        self.total_transactions = total_transactions
 
     def disable(self):
         """Mark the account as inactive."""
-        self.status = "I"
+        self.status = "D"
+
+    def apply_backend_transaction(self, transaction: Transaction) -> bool:
+        """
+        Applies a transaction from the backend batch process, including fees.
+        This method contains the core business logic for backend processing.
+        Returns True on success, False on failure.
+        """
+        if self.status == 'D':
+            # Do not process transactions on disabled accounts
+            return False
+
+        # Determine the fee based on the account plan for relevant transactions
+        fee = 0.0
+        if transaction.transaction_type in ("withdraw", "deposit", "transfer", "paybill"):
+            fee = TRANSACTION_FEES.get(self.plan, 0.05)  # Default to SP fee
+
+        # Apply transaction logic
+        if transaction.transaction_type == "withdraw":
+            if self.balance >= (transaction.amount + fee):
+                self.balance -= (transaction.amount + fee)
+                self.total_transactions += 1
+                return True
+            return False  # Insufficient funds
+
+        elif transaction.transaction_type == "deposit":
+            self.balance += (transaction.amount - fee)
+            self.total_transactions += 1
+            return True
+
+        elif transaction.transaction_type == "transfer":
+            # This method only handles the 'from' side of the transfer
+            if self.balance >= (transaction.amount + fee):
+                self.balance -= (transaction.amount + fee)
+                self.total_transactions += 1
+                return True
+            return False  # Insufficient funds
+
+        elif transaction.transaction_type == "changeplan":
+            # The new plan should be in the transaction's misc field
+            if transaction.misc in ('SP', 'NP'):
+                self.plan = transaction.misc
+                return True
+            return False
+
+        return False  # Unknown or unhandled transaction type
