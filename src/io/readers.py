@@ -14,13 +14,20 @@ def parse_current_account_line(line: str) -> Optional[Account]:
     if "ENDOFFILE" in line:
         return None
 
-    if len(line) != 34:
+    if len(line) not in (34, 35):
         return None
 
     acct_num = int(line[0:5])
     name = line[5:25].rstrip()
     status = line[25:26]
-    balance = float(line[26:34])
+
+    # Support both exact 34-char and 35-char current account formats
+    if len(line) == 34:
+        balance_str = line[26:34]
+    else:
+        balance_str = line[27:35]
+
+    balance = float(balance_str)
 
     return Account(
         account_number=acct_num,

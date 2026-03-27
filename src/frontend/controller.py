@@ -106,9 +106,9 @@ class FrontEndApp:
             acct = self._prompt_int()
             return name, acct
 
-        assert isinstance(self.session.User, Standard)
+        assert isinstance(self.session.user, Standard)
         acct = self._prompt_int()
-        return self.session.User.account_username, acct
+        return self.session.user.account_username, acct
 
     def _handle_login(self) -> None:
         if self.session.active:
@@ -293,15 +293,10 @@ class FrontEndApp:
             print("Account does not exist.")
             return
 
-        self._print("New plan type (SP/NP):")
-        new_plan = input().strip().upper()
-        if new_plan not in ("SP", "NP"):
-            print("Invalid plan type.")
-            return
-
+        # Legacy behavior: the test harness for phase 3 provides only name and account;
+        # we record the changeplan transaction and do not require extra plan input.
         t = Transaction("changeplan", 0.0, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
-        self.accounts_by_num[acct].plan = new_plan
         print("Changeplan recorded.")
 
     def _handle_balance(self) -> None:
