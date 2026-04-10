@@ -23,6 +23,22 @@ def apply_transactions(accounts: List[Account], transactions: List[Transaction])
             accounts_by_num[trans.account_number] = new_account
             continue
 
+        # Handle delete transactions
+        if trans.transaction_type == "delete":
+            if trans.account_number in accounts_by_num:
+                del accounts_by_num[trans.account_number]
+            else:
+                log_constraint_error(f"Account {trans.account_number} not found for deletion.", f"Transaction {trans.transaction_type}")
+            continue
+            
+        # Handle disable transactions
+        if trans.transaction_type == "disable":
+            if trans.account_number in accounts_by_num:
+                accounts_by_num[trans.account_number].status = "D"
+            else:
+                log_constraint_error(f"Account {trans.account_number} not found for disable.", f"Transaction {trans.transaction_type}")
+            continue
+
         # Handle transfers, which involve two accounts
         if trans.transaction_type == "transfer":
             from_account = accounts_by_num.get(trans.from_account)
@@ -35,7 +51,7 @@ def apply_transactions(accounts: List[Account], transactions: List[Transaction])
             # Apply transaction to the 'from' account (with fee)
             if from_account.apply_backend_transaction(trans):
                 # If successful, apply the amount to the 'to' account (no fee)
-                to_account.balance += trans.amount
+                to_account.balance = round(to_account.balance + trans.amount, 2)
             else:
                 log_constraint_error(f"Failed to process transfer from account {from_account.account_number}.", f"Transaction {trans.transaction_type}")
 

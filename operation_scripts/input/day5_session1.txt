@@ -1,8 +1,8 @@
 login
-admin
-admin01
-create
+standard
 Charlie Brown
 10003
-1000.00
+password
+balance
+10003
 logout

@@ -11,7 +11,10 @@ def write_master_accounts_file(accounts: List[Account], file_path: str):
     Writes the new Master Accounts File in the fixed-width format.
     Format: NNNNN AAAAAAAAAAAAAAAAAAAA S BBBBBB.BB TTTT PL
     """
-    with open(file_path, 'w') as file:
+    # Sort accounts by account number to satisfy ascending order constraint
+    accounts = sorted(accounts, key=lambda a: a.account_number)
+
+    with open(file_path, 'w', newline='\n') as file:
         for acc in accounts:
             # Validation
             if not isinstance(acc.account_number, int) or acc.account_number < 0 or acc.account_number > 99999:
@@ -44,7 +47,10 @@ def write_current_accounts_file(accounts: List[Account], file_path: str):
     Writes the new Current Bank Accounts File.
     Format: NNNNN AAAAAAAAAAAAAAAAAAAA S BBBBBB.BB
     """
-    with open(file_path, 'w') as file:
+    # Sort accounts by account number ascending
+    accounts = sorted(accounts, key=lambda a: a.account_number)
+
+    with open(file_path, 'w', newline='\n') as file:
         for acc in accounts:
             # Basic validation before writing
             if not isinstance(acc.account_number, int) or acc.account_number < 0 or acc.account_number > 99999:
@@ -62,50 +68,60 @@ def write_current_accounts_file(accounts: List[Account], file_path: str):
             status = acc.status
             balance = f"{acc.balance:08.2f}"
 
-            line = f"{acc_num}{name}{status}{balance}\n"
+            line = f"{acc_num} {name} {status} {balance}\n"
             file.write(line)
 
         # Add ENDOFFILE marker
-        file.write("00000ENDOFFILE          A00000.00\n")
+        file.write("00000 ENDOFFILE           A 00000.00\n")
 
 
 def write_daily_transaction_file(path: str, transactions: List[Transaction]) -> None:
-    """Write transactions in the multi-line expected (.etf) format."""
-    # Use newline='' to prevent Python from converting \n to \r\n on Windows
-    with open(path, "w", encoding="utf-8", newline="") as f:
+    """Write transactions in the 40-character fixed-width format."""
+    TYPE_TO_CODE = {
+        'withdraw': '01',
+        'transfer': '02',
+        'paybill': '03',
+        'deposit': '04',
+        'create': '05',
+        'delete': '06',
+        'disable': '07',
+        'changeplan': '08',
+    }
+
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
         for t in transactions:
-            # Match the expected formatting exactly
-            f.write(f"Transaction: {t.transaction_type}\n")
-            f.write(f"Amount: {float(t.amount)}\n")
+            if t.transaction_type == 'balance':
+                continue  # Do not record balance inquiries in the daily file
 
-           # FromAccount: pad if non-zero, don't pad if zero
-            from_acct = int(t.from_account) if t.from_account else 0
-            if from_acct > 0:
-                f.write(f"FromAccount: {from_acct:05d}\n")
-            else:
-                f.write(f"FromAccount: {from_acct}\n")
-
-            # ToAccount: handle string (company) and numeric cases
-            if isinstance(t.to_account, str):
-                # Company name for paybill
-                f.write(f"ToAccount: {t.to_account}\n")
-            else:
-                # Numeric account: pad if non-zero, don't pad if zero
-                to_acct = int(t.to_account) if t.to_account else 0
-                if to_acct > 0:
-                    f.write(f"ToAccount: {to_acct:05d}\n")
-                else:
-                    f.write(f"ToAccount: {to_acct}\n")
-
-            f.write(f"Name: {t.name}\n")
-
-            # Expected shows 5-digit account number (00001)
+            code = TYPE_TO_CODE.get(t.transaction_type, '00')
+            name = str(t.name).ljust(20, ' ')[:20]
+            
             try:
                 acct_num = int(t.account_number)
-            except Exception:
+            except (ValueError, TypeError):
                 acct_num = 0
-            f.write(f"Account_Number: {acct_num:05d}\n")
-
-            # Per expected format, Misc field is on its own line without a value.
-            f.write("Misc:\n")
-            f.write(f"Time: {FIXED_TIME_STR}\n")
+            acct_str = f"{acct_num:05d}"
+            
+            try:
+                amt = float(t.amount)
+            except (ValueError, TypeError):
+                amt = 0.0
+            amt_str = f"{amt:08.2f}"
+            
+            misc = str(t.misc).ljust(2, ' ')[:2]
+            
+            # Format: CC AAAAAAAAAAAAAAAAAAAA NNNNN PPPPPPPPMM (Length: 40)
+            # To support transfers despite spec limitations, append destination account
+            if t.transaction_type == 'transfer':
+                try:
+                    to_acct = int(t.to_account)
+                except (ValueError, TypeError):
+                    to_acct = 0
+                line = f"{code} {name} {acct_str} {amt_str}{misc} {to_acct:05d}\n"
+            else:
+                line = f"{code} {name} {acct_str} {amt_str}{misc}\n"
+                
+            f.write(line)
+        
+        # Append end of session marker to session file
+        f.write("00                                      \n")

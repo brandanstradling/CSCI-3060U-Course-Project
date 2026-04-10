@@ -1,3 +1,1 @@
-10001Alice Smith         A00500.00
-10002Bob Jones           A00300.00
-00000ENDOFFILE          A00000.00
+00000 END_OF_FILE         A 00000.00

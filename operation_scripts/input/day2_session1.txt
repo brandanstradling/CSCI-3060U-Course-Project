@@ -2,9 +2,9 @@ login
 standard
 Bob Jones
 10002
-pass123
-paybill
+password
+transfer
 10002
-EC
+10001
 50.00
 logout

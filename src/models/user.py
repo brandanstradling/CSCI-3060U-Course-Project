@@ -1,7 +1,6 @@
 """User roles used to represent standard and admin sessions."""
 
 from dataclasses import dataclass
-from datetime import datetime
 
 from src.models.transaction import Transaction
 

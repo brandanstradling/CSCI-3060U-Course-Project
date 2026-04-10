@@ -1,6 +1,6 @@
 """IO readers for accounts and transactions."""
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 from src.models.account import Account
 from src.models.transaction import Transaction
 from src.backend.utils.print_error import log_constraint_error
@@ -8,24 +8,19 @@ from src.backend.utils.print_error import log_constraint_error
 
 def parse_current_account_line(line: str) -> Optional[Account]:
     """Parse one fixed-width current account line, returning None for the end sentinel."""
-    line = line.rstrip("\n")
+    line = line.rstrip("\r\n")
 
     # Check for end-of-file marker before parsing
-    if "ENDOFFILE" in line:
+    if "END_OF_FILE" in line:
         return None
 
-    if len(line) not in (34, 35):
+    if len(line) != 37:
         return None
 
     acct_num = int(line[0:5])
-    name = line[5:25].rstrip()
-    status = line[25:26]
-
-    # Support both exact 34-char and 35-char current account formats
-    if len(line) == 34:
-        balance_str = line[26:34]
-    else:
-        balance_str = line[27:35]
+    name = line[6:26].rstrip()
+    status = line[27:28]
+    balance_str = line[29:37]
 
     balance = float(balance_str)
 
@@ -63,7 +58,9 @@ def read_master_accounts(file_path: str) -> List[Account]:
     try:
         with open(file_path, 'r') as file:
             for line_num, line in enumerate(file, 1):
-                clean_line = line.rstrip('\n')
+                clean_line = line.rstrip('\r\n')
+                if not clean_line:
+                    continue
                 context = f"Line {line_num}"
 
                 if len(clean_line) != 45:
@@ -146,11 +143,13 @@ def read_daily_transactions(file_path: str) -> List[Transaction]:
     try:
         with open(file_path, 'r') as file:
             for line_num, line in enumerate(file, 1):
-                clean_line = line.rstrip('\n')
+                clean_line = line.rstrip('\r\n')
+                if not clean_line:
+                    continue
                 context = f"Line {line_num}"
 
-                if len(clean_line) != 58:
-                    log_constraint_error(f"Invalid length ({len(clean_line)} chars, expected 58)", context)
+                if len(clean_line) != 40:
+                    log_constraint_error(f"Invalid length ({len(clean_line)} chars, expected 40)", context)
                     continue
 
                 try:
@@ -202,67 +201,83 @@ def read_daily_transactions(file_path: str) -> List[Transaction]:
 
 def read_merged_transaction_file(file_path: str) -> List[Transaction]:
     """
-    Reads a merged transaction summary file in multi-line format.
+    Reads a merged transaction summary file, where each line is a 40-character fixed-width string.
     Returns a list of Transaction objects.
     """
     transactions = []
+    transaction_type_map = {
+        '01': 'withdraw', '02': 'transfer', '03': 'paybill',
+        '04': 'deposit', '05': 'create', '06': 'delete',
+        '07': 'disable', '08': 'changeplan'
+    }
+
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
-            lines = file.readlines()
-            i = 0
-            while i < len(lines):
-                # Skip empty lines
-                if lines[i].strip() == "":
-                    i += 1
+            for line_num, line in enumerate(file, 1):
+                clean_line = line.rstrip('\r\n')
+                context = f"Line {line_num}"
+
+                if not clean_line:
                     continue
-                
-                # Parse transaction block
-                if not lines[i].startswith("Transaction: "):
-                    i += 1
+
+                if len(clean_line) not in (40, 46):
+                    log_constraint_error(f"Invalid length ({len(clean_line)} chars, expected 40 or 46)", context)
                     continue
-                
-                transaction_type = lines[i].strip().split(": ")[1]
-                i += 1
-                
-                amount = float(lines[i].strip().split(": ")[1])
-                i += 1
-                
-                from_account = int(lines[i].strip().split(": ")[1])
-                i += 1
-                
-                to_account_str = lines[i].strip().split(": ")[1]
+
+                code = clean_line[0:2]
+                if code == '00':
+                    # End of session marker, skip to next transaction
+                    continue
+
                 try:
-                    to_account = int(to_account_str)
-                except ValueError:
-                    to_account = to_account_str  # Company name for paybill
-                i += 1
-                
-                name = lines[i].strip().split(": ")[1]
-                i += 1
-                
-                account_number = int(lines[i].strip().split(": ")[1])
-                i += 1
-                
-                # Skip Misc: line
-                if lines[i].strip() == "Misc:":
-                    i += 1
-                
-                # Skip Time: line
-                if i < len(lines) and lines[i].startswith("Time: "):
-                    i += 1
-                
-                # Create transaction
-                transaction = Transaction(
-                    transaction_type=transaction_type,
-                    amount=amount,
-                    from_account=from_account,
-                    to_account=to_account,
-                    name=name,
-                    account_number=account_number,
-                    misc=""
-                )
-                transactions.append(transaction)
-                
+                    # --- Field Extraction (based on 40-char total length) ---
+                    # CC(2)_(1)_Name(20)_(1)_Acct(5)_(1)_Amount(8)_Misc(2) = 40
+                    name = clean_line[3:23].strip()
+                    account_number_str = clean_line[24:29]
+                    amount_str = clean_line[30:38]
+                    misc = clean_line[38:40].strip()
+
+                    # --- Validation and Conversion ---
+                    transaction_type = transaction_type_map.get(code)
+                    if not transaction_type:
+                        log_constraint_error(f"Invalid transaction code '{code}'", context)
+                        continue
+
+                    if not account_number_str.isdigit():
+                        log_constraint_error(f"Account number must be 5 digits, got '{account_number_str}'", context)
+                        continue
+                    account_number = int(account_number_str)
+
+                    if (len(amount_str) != 8 or amount_str[5] != '.' or
+                            not amount_str[:5].isdigit() or not amount_str[6:].isdigit()):
+                        log_constraint_error(f"Invalid amount format. Expected XXXXX.XX, got {amount_str}", context)
+                        continue
+                    amount = float(amount_str)
+
+                    # --- Build Transaction Object ---
+                    from_acct = 0
+                    to_acct = 0
+
+                    if transaction_type == 'transfer':
+                        from_acct = account_number
+                        # Attempt to extract the smuggled to_account if present
+                        if len(clean_line) == 46:
+                            to_acct = int(clean_line[41:46])
+                        else:
+                            to_acct = 0
+                    else:
+                        # For other types, the main account is 'account_number'.
+                        from_acct = account_number
+
+                    transactions.append(Transaction(
+                        transaction_type=transaction_type, amount=amount,
+                        from_account=from_acct, to_account=to_acct,
+                        name=name, account_number=account_number, misc=misc
+                    ))
+
+                except (ValueError, IndexError) as e:
+                    log_constraint_error(f"Unexpected error parsing line - {str(e)}", context)
+                    continue
     except FileNotFoundError:
         log_constraint_error(f"File not found: {file_path}", "File I/O", fatal=True)
     except Exception as e:

@@ -1,4 +1,4 @@
-10001Alice Smith         A00554.85
-10002Bob Jones           A00324.95
-10003Charlie Brown       A00879.95
-00000ENDOFFILE          A00000.00
+10001 Alice Smith          A 00529.95
+10002 Bob Jones            D 00314.90
+10003 Charlie Brown        A 00799.95
+00000 END_OF_FILE         A 00000.00

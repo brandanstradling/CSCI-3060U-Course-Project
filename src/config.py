@@ -1,11 +1,5 @@
 """Configuration constants for the banking system."""
 
-# Transaction fees by account plan
-TRANSACTION_FEES = {
-    'NP': 0.10,  # Non-Prime
-    'SP': 0.05,  # Student Plan
-}
-
 # Paybill companies
 PAYBILL_COMPANIES = {"EC", "CQ", "FI"}
 

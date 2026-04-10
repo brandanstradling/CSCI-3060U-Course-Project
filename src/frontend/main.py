@@ -2,6 +2,7 @@
 
 import sys
 import os
+import argparse
 
 # Add the project root to Python path for imports
 project_root = os.path.join(os.path.dirname(__file__), '..', '..')
@@ -10,10 +11,9 @@ sys.path.insert(0, os.path.abspath(project_root))
 from src.frontend.controller import FrontEndApp
 
 def main() -> None:
-    import argparse
     parser = argparse.ArgumentParser(description="Bank Frontend")
     parser.add_argument("current_accounts_path", nargs='?', default="data/current_accounts.txt", help="Current accounts file")
-    parser.add_argument("daily_transactions_path", nargs='?', default="data/daily_transactions.atf", help="Daily transactions file")
+    parser.add_argument("daily_transactions_path", nargs='?', default="data/daily_transactions.txt", help="Daily transactions file")
     args = parser.parse_args()
 
     # Interactive mode

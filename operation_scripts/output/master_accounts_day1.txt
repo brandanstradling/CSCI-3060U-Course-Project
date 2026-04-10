@@ -1,2 +1,2 @@
-10001 Alice Smith          A 00649.95 0001 SP
-10002 Bob Jones            A 00300.00 0000 SP
+10001 Alice Smith          A 00500.00 0000 SP
+10002 Bob Jones            A 00200.00 0000 SP

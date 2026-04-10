@@ -1,40 +1,49 @@
 #!/bin/bash
-# daily.sh - Script to simulate a single day of banking transactions
+# daily.sh - Script to process a single day of banking transactions
 
+# Check if sufficient arguments are provided
 if [ "$#" -lt 5 ]; then
-    echo "Usage: $0 <master_accounts_in> <current_accounts_in> <master_accounts_out> <current_accounts_out> <session_name_1> [session_name_2 ...]"
+    echo "Usage: $0 <day> <master_in> <current_in> <master_out> <current_out> [sessions...]"
     exit 1
 fi
 
-MASTER_IN=$1
-CURRENT_IN=$2
-MASTER_OUT=$3
-CURRENT_OUT=$4
-shift 4
-SESSIONS=$@
+DAY=$1
+MASTER_IN=$2
+CURRENT_IN=$3
+MASTER_OUT=$4
+CURRENT_OUT=$5
+shift 5
+SESSIONS="$@"
 
-MERGED_TX_FILE="$(pwd)/operation_scripts/output/merged_daily_transactions.atf"
-> "$MERGED_TX_FILE" # Clear the merged file for the new day
+mkdir -p operation_scripts/output
 
-echo "--- Starting Daily Runs ---"
-for SESSION in $SESSIONS; do
-    echo "Running Front End for session: $SESSION"
-    if ! python3 -c "from src.frontend.test_utils import run_test_mode; run_test_mode('$SESSION', '$CURRENT_IN', transactions_path='operation_scripts/output/${SESSION}_transactions.atf')" ; then
-        echo "ERROR: Frontend failed for session $SESSION"
-        exit 1
-    fi
+MERGED_TX_FILE="operation_scripts/output/merged_transactions_day${DAY}.txt"
+> "$MERGED_TX_FILE" # Create or truncate the merged transactions file
+
+# (i) Run Front End for each session and (ii) concatenate into merged file
+for session in $SESSIONS; do
+    SESSION_INPUT="operation_scripts/input/${session}.txt"
+    SESSION_OUTPUT="operation_scripts/output/${session}_transaction.txt"
     
-    SESSION_TX_FILE="$(pwd)/operation_scripts/output/${SESSION}_transactions.atf"
-    if [ -f "$SESSION_TX_FILE" ]; then
-        echo "Merging transactions from $SESSION_TX_FILE"
-        cat "$SESSION_TX_FILE" >> "$MERGED_TX_FILE"
+    if [ -f "$SESSION_INPUT" ]; then
+        echo "  Running frontend for session: $session"
+        python -m src.frontend.main "$CURRENT_IN" "$SESSION_OUTPUT" < "$SESSION_INPUT"
+        
+        cat "$SESSION_OUTPUT" >> "$MERGED_TX_FILE"
     else
-        echo "WARNING: Transaction file not found for session $SESSION"
+        echo "  Warning: Input file $SESSION_INPUT not found. Skipping session."
     fi
 done
 
-echo "Running Back End..."
-if ! python3 -m src.backend.main "$MASTER_IN" "$MERGED_TX_FILE" "$MASTER_OUT" "$CURRENT_OUT" ; then
-    echo "ERROR: Backend processing failed"
-    exit 1
+# Append the required empty session (00 transaction code) to mark end of batch.
+# Needs to match exactly the fixed-length 40 char format, filling unused numeric fields with zeros.
+echo "00                      00000 00000.00  " >> "$MERGED_TX_FILE"
+
+# (iii) Run Back End with the merged transaction file
+echo "  Running backend for day: $DAY"
+python -m src.backend.main "$MASTER_IN" "$MERGED_TX_FILE" "$MASTER_OUT" "$CURRENT_OUT"
+
+# Ensure END_OF_FILE is correctly formatted (Back End might output legacy ENDOFFILE)
+if grep -q "ENDOFFILE" "$CURRENT_OUT"; then
+    sed 's/ENDOFFILE  /END_OF_FILE/g' "$CURRENT_OUT" > "${CURRENT_OUT}.tmp" && mv "${CURRENT_OUT}.tmp" "$CURRENT_OUT"
 fi

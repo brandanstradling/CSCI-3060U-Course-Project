@@ -1,7 +1,10 @@
 login
-admin
-admin01
-disable
+standard
 Bob Jones
 10002
+password
+paybill
+10002
+EC
+35.00
 logout

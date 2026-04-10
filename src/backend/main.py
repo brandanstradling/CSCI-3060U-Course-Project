@@ -18,7 +18,7 @@ import os
 project_root = os.path.join(os.path.dirname(__file__), '..', '..')
 sys.path.insert(0, os.path.abspath(project_root))
 
-from src.io.readers import load_current_accounts, read_master_accounts, read_merged_transaction_file
+from src.io.readers import read_master_accounts, read_merged_transaction_file
 from src.io.writers import write_master_accounts_file, write_current_accounts_file
 from src.backend.processing import apply_transactions
 

@@ -8,15 +8,12 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_DIR"
 
 chmod +x operation_scripts/daily.sh
+chmod +x operation_scripts/verify_balances.sh
 
-# Assumes base starting files exist at data/master_accounts_day0.txt and data/current_accounts_day0.txt
-# Creating empty/dummy files if they don't exist yet to prevent crashes
-if [ ! -f "data/master_accounts_day0.txt" ]; then
-    touch data/master_accounts_day0.txt
-fi
-if [ ! -f "data/current_accounts_day0.txt" ]; then
-    touch data/current_accounts_day0.txt
-fi
+# Reset the base starting files to ensure a clean slate for the weekly simulation
+mkdir -p data
+> data/master_accounts_day0.txt
+echo "00000 END_OF_FILE         A 00000.00" > data/current_accounts_day0.txt
 
 mkdir -p operation_scripts/output
 
@@ -49,10 +46,13 @@ for day in {1..7}; do
     SESSIONS=${!var_name}
     
     echo "Running daily script for day $day..."
-    if ! ./operation_scripts/daily.sh "$MASTER_IN" "$CURRENT_IN" "$MASTER_OUT" "$CURRENT_OUT" $SESSIONS ; then
+    if ! ./operation_scripts/daily.sh "$day" "$MASTER_IN" "$CURRENT_IN" "$MASTER_OUT" "$CURRENT_OUT" $SESSIONS ; then
         echo "ERROR: Daily script failed for day $day"
         exit 1
     fi
 done
 
 echo "Weekly simulation complete."
+
+# Run the automated assertions
+./operation_scripts/verify_balances.sh

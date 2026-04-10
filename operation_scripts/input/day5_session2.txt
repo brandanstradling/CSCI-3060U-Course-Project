@@ -2,7 +2,9 @@ login
 standard
 Charlie Brown
 10003
-pass123
-balance
+password
+transfer
 10003
+10002
+200.00
 logout

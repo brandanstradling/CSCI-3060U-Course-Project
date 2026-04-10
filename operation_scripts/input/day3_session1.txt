@@ -2,9 +2,8 @@ login
 standard
 Alice Smith
 10001
-pass123
-transfer
+password
+withdrawal
 10001
-10002
-75.00
+20.00
 logout

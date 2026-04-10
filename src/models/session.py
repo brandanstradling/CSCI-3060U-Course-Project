@@ -2,8 +2,6 @@
 
 from src.config import WITHDRAWAL_LIMIT, TRANSFER_LIMIT, PAYBILL_LIMIT
 from src.models.user import Admin, Standard
-from src.models.transaction import Transaction
-
 
 
 class Session:

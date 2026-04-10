@@ -8,5 +8,5 @@ Alice Smith
 create
 Bob Jones
 10002
-300.00
+200.00
 logout

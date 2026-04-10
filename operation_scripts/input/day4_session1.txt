@@ -1,9 +1,8 @@
 login
-standard
-Alice Smith
-10001
-pass123
-withdrawal
-10001
-20.00
+admin
+admin01
+create
+Charlie Brown
+10003
+1000.00
 logout

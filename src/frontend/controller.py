@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 import sys
 
-from src.config import PAYBILL_COMPANIES, FIXED_TIME_STR
+from src.config import PAYBILL_COMPANIES
 from src.io.readers import load_current_accounts
 from src.io.writers import write_daily_transaction_file
 from src.models.account import Account
@@ -33,6 +33,8 @@ class FrontEndApp:
                 self._print("Command (withdrawal, transfer, paybill, deposit, balance, create, delete, disable, changeplan, login, logout):")
                 cmd = input().strip().lower()
             except EOFError:
+                if self.session.active:
+                    self._handle_logout()
                 self._print("Goodbye.")
                 return
 
@@ -124,14 +126,9 @@ class FrontEndApp:
         if mode == "standard":
             self._print("Name:")
             name = input().strip()
-            acct = self._prompt_int()
-            self._print("Password:")
-            pwd = input().strip()
-            user = Standard(account_username=name, account_number=acct, password=pwd)
+            user = Standard(account_username=name, account_number=0, password="")
         else:
-            self._print("Admin ID:")
-            admin_id = input().strip()
-            user = Admin(admin_ID=admin_id)
+            user = Admin(admin_ID="admin")
 
         if not user.verify_login(self.session.active):
             print("Invalid credentials.")
@@ -159,6 +156,14 @@ class FrontEndApp:
         name, acct = self._get_name_and_account_number()
         if acct not in self.accounts_by_num:
             print("Account does not exist.")
+            return
+
+        if self.accounts_by_num[acct].name != name:
+            print("Account name mismatch.")
+            return
+
+        if self.accounts_by_num[acct].status == "D":
+            print("Account disabled.")
             return
 
         amt = self._prompt_amount()
@@ -202,6 +207,14 @@ class FrontEndApp:
             print("Account does not exist.")
             return
 
+        if self.accounts_by_num[acct].name != name:
+            print("Account name mismatch.")
+            return
+
+        if self.accounts_by_num[acct].status == "D":
+            print("Account disabled.")
+            return
+
         self._print("Company code (EC/CQ/FI):")
         company = input().strip().upper()
         amt = self._prompt_amount()
@@ -213,8 +226,8 @@ class FrontEndApp:
             print("Paybill limit exceeded.")
             return
 
-        # Your expected shows ToAccount: EC/CQ/FI, so put company there
-        t = Transaction("paybill", amt, acct, company, name, acct, "")
+        # Company code goes in the 'misc' (MM) field of the transaction file format
+        t = Transaction("paybill", amt, acct, 0, name, acct, company)
         self.logged_transactions.append(t)
         self.session.paybill_total += amt
         print("Paybill recorded. ")
@@ -228,10 +241,17 @@ class FrontEndApp:
             print("Account does not exist.")
             return
 
+        if self.accounts_by_num[acct].name != name:
+            print("Account name mismatch.")
+            return
+
+        if self.accounts_by_num[acct].status == "D":
+            print("Account disabled.")
+            return
+
         amt = self._prompt_amount()
         t = Transaction("deposit", amt, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
-        self.accounts_by_num[acct].balance += amt
         print("Deposit recorded. ")
 
     def _handle_create(self) -> None:
@@ -250,42 +270,6 @@ class FrontEndApp:
         t = Transaction("create", amt, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
         
-        # Add the new account to the in-memory accounts
-        from src.models.account import Account
-        new_account = Account(acct, amt, name, "A")
-        self.accounts_by_num[acct] = new_account
-        
-        # Update the current accounts file
-        acc_num = f"{acct:05d}"
-        name_padded = name.ljust(20)
-        balance_str = f"{amt:08.2f}"
-        new_line = f"{acc_num}{name_padded}A{balance_str}\n"
-        
-        try:
-            with open(self.current_accounts_path, 'r') as f:
-                lines = f.readlines()
-            
-            # Find the ENDOFFILE line
-            eof_index = -1
-            for i, line in enumerate(lines):
-                if line.startswith("00000ENDOFFILE"):
-                    eof_index = i
-                    break
-            
-            if eof_index >= 0:
-                # Insert before ENDOFFILE
-                lines.insert(eof_index, new_line)
-            else:
-                # No ENDOFFILE, append
-                lines.append(new_line)
-            
-            with open(self.current_accounts_path, 'w') as f:
-                f.writelines(lines)
-        except FileNotFoundError:
-            # If file doesn't exist, create it with the account
-            with open(self.current_accounts_path, 'w') as f:
-                f.write(new_line)
-        
         print("Create recorded.")
 
     def _handle_delete(self) -> None:
@@ -298,6 +282,10 @@ class FrontEndApp:
 
         if acct not in self.accounts_by_num:
             print("Account does not exist.")
+            return
+
+        if self.accounts_by_num[acct].name != name:
+            print("Account name mismatch.")
             return
 
         t = Transaction("delete", 0.0, 0, 0, name, acct, "")
@@ -317,6 +305,10 @@ class FrontEndApp:
             print("Account does not exist.")
             return
 
+        if self.accounts_by_num[acct].name != name:
+            print("Account name mismatch.")
+            return
+
         t = Transaction("disable", 0.0, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
         self.accounts_by_num[acct].status = "D"
@@ -334,9 +326,17 @@ class FrontEndApp:
             print("Account does not exist.")
             return
 
+        if self.accounts_by_num[acct].name != name:
+            print("Account name mismatch.")
+            return
+
+        if self.accounts_by_num[acct].status == "D":
+            print("Account disabled.")
+            return
+
         # Legacy behavior: the test harness for phase 3 provides only name and account;
         # we record the changeplan transaction and do not require extra plan input.
-        t = Transaction("changeplan", 0.0, 0, 0, name, acct, "")
+        t = Transaction("changeplan", 0.0, 0, 0, name, acct, "NP")
         self.logged_transactions.append(t)
         print("Changeplan recorded.")
 
@@ -349,7 +349,9 @@ class FrontEndApp:
             print("Account does not exist.")
             return
 
+        if self.accounts_by_num[acct].name != name:
+            print("Account name mismatch.")
+            return
+
         bal = float(self.accounts_by_num[acct].balance)
-        t = Transaction("balance", 0.0, 0, 0, name, acct, "")
-        self.logged_transactions.append(t)
         print(f"Balance: {bal:.2f} ")
