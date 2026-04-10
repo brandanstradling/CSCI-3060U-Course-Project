@@ -9,17 +9,18 @@ else
     exit 1
 fi
 
-mkdir -p out/actual
+cd ..
+mkdir -p testing_frontend/out/actual
 
 failed=0
-for file in input/test*.txt; do
+for file in testing_frontend/input/test*.txt; do
     [ -f "$file" ] || continue
     testname=$(basename "$file" .txt)
     echo "Running $testname"
-    if "$PYTHON" -m src.frontend.main "$testname" data/current_accounts.txt \
-        < "$file" \
-        > "out/actual/$testname.out" \
-        2> "out/actual/$testname.err"; then
+    if "$PYTHON" -c "
+from src.frontend.test_utils import run_test_mode
+run_test_mode('$testname', 'data/current_accounts.txt', '$file', 'testing_frontend/out/actual/$testname.atf', quiet=True)
+" > "testing_frontend/out/actual/$testname.out" 2> "testing_frontend/out/actual/$testname.err"; then
         echo "OK"
     else
         echo "FAILED $testname"

@@ -54,6 +54,13 @@ class Account:
                 return True
             return False  # Insufficient funds
 
+        elif transaction.transaction_type == "paybill":
+            if self.balance >= (transaction.amount + fee):
+                self.balance -= (transaction.amount + fee)
+                self.total_transactions += 1
+                return True
+            return False  # Insufficient funds
+
         elif transaction.transaction_type == "changeplan":
             # The new plan should be in the transaction's misc field
             if transaction.misc in ('SP', 'NP'):

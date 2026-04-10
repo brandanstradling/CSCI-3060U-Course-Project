@@ -1,24 +1,25 @@
 #!/bin/bash
 
+cd ..
 ok=0
 total=0
-for file in input/test*.txt; do
+for file in testing_frontend/input/test*.txt; do
     [ -f "$file" ] || continue
     testname=$(basename "$file" .txt)
     total=$((total+1))
 
-    if [ ! -f "out/actual/$testname.atf" ] || [ ! -f "out/actual/$testname.out" ]; then
+    if [ ! -f "testing_frontend/out/actual/$testname.atf" ] || [ ! -f "testing_frontend/out/actual/$testname.out" ]; then
         echo "$testname: MISSING actual outputs"
         continue
     fi
-    if [ ! -f "out/expected/$testname.etf" ] || [ ! -f "out/expected/$testname.out" ]; then
+    if [ ! -f "testing_frontend/out/expected/$testname.etf" ] || [ ! -f "testing_frontend/out/expected/$testname.out" ]; then
         echo "$testname: MISSING expected outputs"
         continue
     fi
 
-    diff -q "out/actual/$testname.atf" "out/expected/$testname.etf" >/dev/null 2>&1
+    diff -q "testing_frontend/out/actual/$testname.atf" "testing_frontend/out/expected/$testname.etf" >/dev/null 2>&1
     atf=$?
-    diff -q "out/actual/$testname.out" "out/expected/$testname.out" >/dev/null 2>&1
+    diff -q "testing_frontend/out/actual/$testname.out" "testing_frontend/out/expected/$testname.out" >/dev/null 2>&1
     out=$?
 
     if [ $atf -eq 0 ] && [ $out -eq 0 ]; then

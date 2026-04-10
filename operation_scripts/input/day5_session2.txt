@@ -1,0 +1,8 @@
+login
+standard
+Charlie Brown
+10003
+pass123
+balance
+10003
+logout

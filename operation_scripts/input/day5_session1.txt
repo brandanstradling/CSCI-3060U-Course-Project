@@ -1,0 +1,8 @@
+login
+admin
+admin01
+create
+Charlie Brown
+10003
+1000.00
+logout

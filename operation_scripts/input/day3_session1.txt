@@ -1,0 +1,10 @@
+login
+standard
+Alice Smith
+10001
+pass123
+transfer
+10001
+10002
+75.00
+logout

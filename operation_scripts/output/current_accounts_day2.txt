@@ -1,0 +1,3 @@
+10001Alice Smith         A00649.95
+10002Bob Jones           A00249.95
+00000ENDOFFILE          A00000.00

@@ -1,0 +1,7 @@
+login
+admin
+admin01
+disable
+Bob Jones
+10002
+logout

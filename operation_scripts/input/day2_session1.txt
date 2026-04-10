@@ -1,0 +1,10 @@
+login
+standard
+Bob Jones
+10002
+pass123
+paybill
+10002
+EC
+50.00
+logout

@@ -18,7 +18,7 @@ import os
 project_root = os.path.join(os.path.dirname(__file__), '..', '..')
 sys.path.insert(0, os.path.abspath(project_root))
 
-from src.io.readers import load_current_accounts, read_merged_transaction_file
+from src.io.readers import load_current_accounts, read_master_accounts, read_merged_transaction_file
 from src.io.writers import write_master_accounts_file, write_current_accounts_file
 from src.backend.processing import apply_transactions
 
@@ -26,10 +26,10 @@ from src.backend.processing import apply_transactions
 def main():
     """Main backend processing function."""
     parser = argparse.ArgumentParser(description="Bank Backend Processing")
-    parser.add_argument("master_accounts_file", nargs='?', default="data/current_accounts.txt", help="Input master accounts file")
-    parser.add_argument("transaction_summary_file", nargs='?', default="data/daily_transactions.txt", help="Input merged transaction summary file")
-    parser.add_argument("new_master_accounts_file", nargs='?', default="data/new_master_accounts.txt", help="Output new master accounts file")
-    parser.add_argument("new_current_accounts_file", nargs='?', default="data/new_current_accounts.txt", help="Output new current accounts file")
+    parser.add_argument("master_accounts_file", help="Input master accounts file")
+    parser.add_argument("transaction_summary_file", help="Input merged transaction summary file")
+    parser.add_argument("new_master_accounts_file", help="Output new master accounts file")
+    parser.add_argument("new_current_accounts_file", help="Output new current accounts file")
     args = parser.parse_args()
 
     # Check if input files exist
@@ -41,7 +41,7 @@ def main():
         return
 
     # 1. Read initial data
-    accounts = load_current_accounts(args.master_accounts_file)
+    accounts = read_master_accounts(args.master_accounts_file)
     transactions = read_merged_transaction_file(args.transaction_summary_file)
 
     # 2. Process transactions

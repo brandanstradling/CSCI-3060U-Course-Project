@@ -202,25 +202,70 @@ def read_daily_transactions(file_path: str) -> List[Transaction]:
 
 def read_merged_transaction_file(file_path: str) -> List[Transaction]:
     """
-    Reads a merged transaction summary file.
-    Assumes a format: CODE ACCT_FROM ACCT_TO AMOUNT NAME MISC
+    Reads a merged transaction summary file in multi-line format.
     Returns a list of Transaction objects.
     """
     transactions = []
     try:
-        with open(file_path, 'r') as file:
-            for line in file:
-                if line.strip() == "EOS":
+        with open(file_path, 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+            i = 0
+            while i < len(lines):
+                # Skip empty lines
+                if lines[i].strip() == "":
+                    i += 1
                     continue
-                parts = line.strip().split()
-                # Basic validation, can be expanded
-                if len(parts) < 6:
+                
+                # Parse transaction block
+                if not lines[i].startswith("Transaction: "):
+                    i += 1
                     continue
-
-                # Unpack assuming the format
-                code, from_acct, to_acct, amount, name, misc = parts[0], parts[1], parts[2], parts[3], parts[4], " ".join(parts[5:])
-                transactions.append(Transaction(code, float(amount), int(from_acct), int(to_acct), name, 0, misc))
+                
+                transaction_type = lines[i].strip().split(": ")[1]
+                i += 1
+                
+                amount = float(lines[i].strip().split(": ")[1])
+                i += 1
+                
+                from_account = int(lines[i].strip().split(": ")[1])
+                i += 1
+                
+                to_account_str = lines[i].strip().split(": ")[1]
+                try:
+                    to_account = int(to_account_str)
+                except ValueError:
+                    to_account = to_account_str  # Company name for paybill
+                i += 1
+                
+                name = lines[i].strip().split(": ")[1]
+                i += 1
+                
+                account_number = int(lines[i].strip().split(": ")[1])
+                i += 1
+                
+                # Skip Misc: line
+                if lines[i].strip() == "Misc:":
+                    i += 1
+                
+                # Skip Time: line
+                if i < len(lines) and lines[i].startswith("Time: "):
+                    i += 1
+                
+                # Create transaction
+                transaction = Transaction(
+                    transaction_type=transaction_type,
+                    amount=amount,
+                    from_account=from_account,
+                    to_account=to_account,
+                    name=name,
+                    account_number=account_number,
+                    misc=""
+                )
+                transactions.append(transaction)
+                
     except FileNotFoundError:
         log_constraint_error(f"File not found: {file_path}", "File I/O", fatal=True)
+    except Exception as e:
+        log_constraint_error(f"Error reading transaction file {file_path}: {e}", "File I/O", fatal=True)
 
     return transactions

@@ -1,0 +1,9 @@
+login
+standard
+Alice Smith
+10001
+pass123
+deposit
+10001
+150.00
+logout

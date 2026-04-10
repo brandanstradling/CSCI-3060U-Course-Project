@@ -1,4 +1,0 @@
-00001John Doe            A  0000.00
-00002Jane Smith          A  0000.00
-00003Bob Johnson         A  0000.00
-ENDOFFILE

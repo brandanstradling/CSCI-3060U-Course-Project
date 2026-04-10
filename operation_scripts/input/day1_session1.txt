@@ -1,0 +1,12 @@
+login
+admin
+admin01
+create
+Alice Smith
+10001
+500.00
+create
+Bob Jones
+10002
+300.00
+logout

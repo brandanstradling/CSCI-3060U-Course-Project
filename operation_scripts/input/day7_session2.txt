@@ -1,0 +1,9 @@
+login
+standard
+Alice Smith
+10001
+pass123
+withdrawal
+10001
+50.00
+logout

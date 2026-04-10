@@ -13,6 +13,16 @@ def apply_transactions(accounts: List[Account], transactions: List[Transaction])
     accounts_by_num: Dict[int, Account] = {acc.account_number: acc for acc in accounts}
 
     for trans in transactions:
+        # Handle create transactions
+        if trans.transaction_type == "create":
+            if trans.account_number in accounts_by_num:
+                log_constraint_error(f"Account {trans.account_number} already exists.", f"Transaction {trans.transaction_type}")
+                continue
+            # Create new account
+            new_account = Account(trans.account_number, trans.amount, trans.name, "A", "SP")  # Default to active, student plan
+            accounts_by_num[trans.account_number] = new_account
+            continue
+
         # Handle transfers, which involve two accounts
         if trans.transaction_type == "transfer":
             from_account = accounts_by_num.get(trans.from_account)

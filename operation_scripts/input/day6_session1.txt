@@ -1,0 +1,10 @@
+login
+standard
+Charlie Brown
+10003
+pass123
+paybill
+10003
+CQ
+120.00
+logout

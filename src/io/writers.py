@@ -13,6 +13,21 @@ def write_master_accounts_file(accounts: List[Account], file_path: str):
     """
     with open(file_path, 'w') as file:
         for acc in accounts:
+            # Validation
+            if not isinstance(acc.account_number, int) or acc.account_number < 0 or acc.account_number > 99999:
+                raise ValueError(f"Invalid account number: {acc.account_number}")
+            if not isinstance(acc.balance, (int, float)) or acc.balance < 0:
+                raise ValueError(f"Invalid balance: {acc.balance}")
+            if acc.status not in ('A', 'D'):
+                raise ValueError(f"Invalid account status: {acc.status}")
+            if len(acc.name) > 20:
+                raise ValueError(f"Account name too long: {acc.name}")
+            if not isinstance(acc.total_transactions, int) or acc.total_transactions < 0:
+                raise ValueError(f"Invalid transaction count: {acc.total_transactions}")
+            if acc.plan not in ('', 'SP', 'NP'):
+                raise ValueError(f"Invalid account plan: {acc.plan}")
+
+            # Format fields
             acc_num = str(acc.account_number).zfill(5)
             name = acc.name.ljust(20)
             status = acc.status
@@ -20,7 +35,7 @@ def write_master_accounts_file(accounts: List[Account], file_path: str):
             transactions = str(acc.total_transactions).zfill(4)
             plan = acc.plan.ljust(2)
 
-            line = f"{acc_num} {name}{status} {balance} {transactions} {plan}\n"
+            line = f"{acc_num} {name} {status} {balance} {transactions} {plan}\n"
             file.write(line)
 
 
@@ -32,10 +47,14 @@ def write_current_accounts_file(accounts: List[Account], file_path: str):
     with open(file_path, 'w') as file:
         for acc in accounts:
             # Basic validation before writing
-            if acc.account_number > 99999:
-                raise ValueError(f"Account number exceeds 5 digits: {acc.account_number}")
-            if acc.balance > 99999.99:
-                raise ValueError(f"Balance exceeds maximum $99999.99: {acc.balance}")
+            if not isinstance(acc.account_number, int) or acc.account_number < 0 or acc.account_number > 99999:
+                raise ValueError(f"Invalid account number: {acc.account_number}")
+            if not isinstance(acc.balance, (int, float)) or acc.balance < 0 or acc.balance > 999999.99:
+                raise ValueError(f"Invalid balance: {acc.balance}")
+            if acc.status not in ('A', 'D'):
+                raise ValueError(f"Invalid account status: {acc.status}")
+            if len(acc.name) > 20:
+                raise ValueError(f"Account name too long: {acc.name}")
 
             # Format fields
             acc_num = str(acc.account_number).zfill(5)

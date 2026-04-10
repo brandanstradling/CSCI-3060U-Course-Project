@@ -1,0 +1,3 @@
+10001 Alice Smith          A 00554.85 0003 SP
+10002 Bob Jones            A 00324.95 0001 SP
+10003 Charlie Brown        A 01000.00 0000 SP

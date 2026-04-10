@@ -243,8 +243,49 @@ class FrontEndApp:
         acct = self._prompt_int()
         amt = self._prompt_amount()
 
-        t = Transaction("create", 0.0, 0, 0, name, acct, "")
+        if acct in self.accounts_by_num:
+            print("Account already exists.")
+            return
+
+        t = Transaction("create", amt, 0, 0, name, acct, "")
         self.logged_transactions.append(t)
+        
+        # Add the new account to the in-memory accounts
+        from src.models.account import Account
+        new_account = Account(acct, amt, name, "A")
+        self.accounts_by_num[acct] = new_account
+        
+        # Update the current accounts file
+        acc_num = f"{acct:05d}"
+        name_padded = name.ljust(20)
+        balance_str = f"{amt:08.2f}"
+        new_line = f"{acc_num}{name_padded}A{balance_str}\n"
+        
+        try:
+            with open(self.current_accounts_path, 'r') as f:
+                lines = f.readlines()
+            
+            # Find the ENDOFFILE line
+            eof_index = -1
+            for i, line in enumerate(lines):
+                if line.startswith("00000ENDOFFILE"):
+                    eof_index = i
+                    break
+            
+            if eof_index >= 0:
+                # Insert before ENDOFFILE
+                lines.insert(eof_index, new_line)
+            else:
+                # No ENDOFFILE, append
+                lines.append(new_line)
+            
+            with open(self.current_accounts_path, 'w') as f:
+                f.writelines(lines)
+        except FileNotFoundError:
+            # If file doesn't exist, create it with the account
+            with open(self.current_accounts_path, 'w') as f:
+                f.write(new_line)
+        
         print("Create recorded.")
 
     def _handle_delete(self) -> None:
