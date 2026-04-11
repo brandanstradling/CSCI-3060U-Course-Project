@@ -29,7 +29,8 @@ for session in $SESSIONS; do
         echo "  Running frontend for session: $session"
         python -m src.frontend.main "$CURRENT_IN" "$SESSION_OUTPUT" < "$SESSION_INPUT"
         
-        cat "$SESSION_OUTPUT" >> "$MERGED_TX_FILE"
+        # Remove trailing 00 from each session to avoid multiple markers in merged file.
+        sed '$d' "$SESSION_OUTPUT" >> "$MERGED_TX_FILE"
     else
         echo "  Warning: Input file $SESSION_INPUT not found. Skipping session."
     fi
